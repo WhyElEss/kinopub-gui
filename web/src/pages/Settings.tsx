@@ -26,6 +26,7 @@ export function SettingsPage() {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [pickOutput, setPickOutput] = useState(false);
   const [pickMovieOutput, setPickMovieOutput] = useState(false);
+  const [pickWork, setPickWork] = useState(false);
   const [pickLib, setPickLib] = useState(false);
 
   // Settings persist automatically on every edit (debounced) — no Save button.
@@ -171,6 +172,32 @@ export function SettingsPage() {
           </div>
         </div>
 
+        <div className="space-y-3 border-t border-white/[0.06] pt-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("Work folder")}</p>
+          <Field
+            label={t("Downloading files are kept here")}
+            hint={t(
+              "Keeps segments and half-written files out of your media library. Best on the same disk as the output folders — then the finished file is moved instantly instead of copied.",
+            )}
+          >
+            <button className="input flex items-center gap-2 text-left" onClick={() => setPickWork(true)} type="button">
+              <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
+              <span className="truncate font-mono text-xs">
+                {form.workDir || t("Next to the finished file")}
+              </span>
+            </button>
+            {form.workDir && (
+              <button
+                type="button"
+                className="mt-1 text-[11px] text-slate-400 hover:text-slate-200"
+                onClick={() => set("workDir", "")}
+              >
+                {t("Keep them next to the finished file")}
+              </button>
+            )}
+          </Field>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t("Default quality")}>
             <select className="input" value={form.quality} onChange={(e) => set("quality", e.target.value)}>
@@ -254,6 +281,12 @@ export function SettingsPage() {
       <UpdateCard />
 
       <DirPicker open={pickOutput} initial={form.outputPath} onClose={() => setPickOutput(false)} onSelect={(p) => set("outputPath", p)} />
+      <DirPicker
+        open={pickWork}
+        initial={form.workDir || form.outputPath}
+        onClose={() => setPickWork(false)}
+        onSelect={(p) => set("workDir", p)}
+      />
       <DirPicker
         open={pickMovieOutput}
         initial={form.movieOutputPath || form.outputPath}

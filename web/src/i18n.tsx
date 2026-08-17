@@ -444,6 +444,12 @@ const RU: Record<string, string> = {
   "Same folder as series — pick another to split them.":
     "Та же папка, что и у сериалов — выберите другую, чтобы разделить.",
   "Use the series folder": "Использовать папку сериалов",
+  "Work folder": "Рабочая папка",
+  "Downloading files are kept here": "Здесь лежат файлы во время загрузки",
+  "Keeps segments and half-written files out of your media library. Best on the same disk as the output folders — then the finished file is moved instantly instead of copied.":
+    "Держит сегменты и недописанные файлы вне медиатеки. Лучше на том же диске, что и папки загрузки — тогда готовый файл переносится мгновенно, а не копируется.",
+  "Next to the finished file": "Рядом с готовым файлом",
+  "Keep them next to the finished file": "Держать рядом с готовым файлом",
   "An empty field falls back to the built-in default, shown above.":
     "Пустое поле — это встроенное значение по умолчанию, оно и показано выше.",
 };

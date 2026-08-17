@@ -202,7 +202,17 @@ Two entries in the quality dropdown are not resolutions:
 
 The rest are explicit resolutions (`1080p`, `720p`, …), listed from what the title actually offers. The default lives in Settings; a single download overrides it in the title window.
 
-### 8. Settings
+### 8. Work folder
+
+While a download runs, intermediate files appear next to the final one: the HLS segment directory, the joined `.ts` stream, ffmpeg's `.tmp` output, and `.raw`/`.part` for direct links. The finished file appears by an atomic rename, so a half-written `.mkv` never exists under the real name — but the debris still sits in the media library. `.ts` is the harmful one: Plex treats it as a video file and may pull it in.
+
+**Settings → Work folder** moves everything intermediate into a directory of its own. Empty keeps the old behaviour (next to the final file).
+
+Keep it **on the same disk** as the output folders: then the finished file is moved by an instant `rename`. On a different filesystem the move falls back to a copy — an extra pass over every gigabyte, though the file still appears atomically. For a media server a hidden directory inside the library volume works well, e.g. `/media/.kinopub-tmp`: both Plex and the app's own Library skip dot-directories.
+
+Names inside the work folder are deterministic (the output's file name plus a hash of its full path), so an interrupted download finds its own segments after a restart and resumes, and two titles sharing a file name never collide. If a hard crash leaves something behind, the folder can simply be emptied while nothing is downloading.
+
+### 9. Settings
 
 Defaults for new downloads (output folders and path templates — separately for series and films, quality, container, concurrency, retries, throttle, proxy) plus extra folders to scan in the Library, the kino.pub sign-in, the ffmpeg installer and the software updater. Stored at `~/.config/kinopub/gui.json` (or `$XDG_CONFIG_HOME/kinopub/gui.json`).
 

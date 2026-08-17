@@ -58,6 +58,7 @@ const emptyFFmpeg: FFmpegStatus = { ffmpegFound: false, ffprobeFound: false };
 const emptySettings: Settings = {
   outputPath: "",
   movieOutputPath: "",
+  workDir: "",
   dirTemplate: DEFAULT_DIR_TEMPLATE,
   nameTemplate: DEFAULT_NAME_TEMPLATE,
   movieDirTemplate: DEFAULT_MOVIE_DIR_TEMPLATE,

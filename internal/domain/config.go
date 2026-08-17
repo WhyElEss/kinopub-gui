@@ -49,8 +49,14 @@ type RunConfig struct {
 	// file inside it (it may contain "/" to nest further, e.g. a season folder).
 	// Both accept tokens like {title} / {year} / {season:02}; empty means the
 	// default layout, <Title>/Season NN/SNNENN. See services/outputlayout.
-	DirTemplate     string
-	NameTemplate    string
+	DirTemplate  string
+	NameTemplate string
+	// WorkDir holds the intermediate files (HLS segments, the joined stream,
+	// ffmpeg's output) while a download runs. Empty keeps them next to the final
+	// file. Pointing it at a folder outside the media library keeps partial data
+	// out of a media server's scans; keeping it on the same filesystem keeps the
+	// final move an atomic rename instead of a full copy.
+	WorkDir string
 	MaxConcurrency  int    // [1,16], default 2 (Req 4.1, 4.2)
 	MaxRetries      int    // default 5 (Req 5.6)
 	MinIntervalMS   int    // [0,60000] (Req 4.5)

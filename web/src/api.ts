@@ -125,6 +125,9 @@ export interface Settings {
   outputPath: string;
   // Films go here instead, when set. Empty = same folder as everything else.
   movieOutputPath: string;
+  // Where intermediate files live while a download runs; empty = next to the
+  // final file.
+  workDir: string;
   dirTemplate: string;
   nameTemplate: string;
   movieDirTemplate: string;

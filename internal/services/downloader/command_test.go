@@ -387,3 +387,37 @@ func containsPair(args []string, flag, value string) bool {
 	}
 	return false
 }
+
+// The container was once inferred from the temp file's name, which only held
+// while the temp file was "<final>.tmp". A work folder breaks that assumption,
+// so the format must come from the destination itself.
+func TestOutputFormatFollowsFinalPathNotTempPath(t *testing.T) {
+	cases := []struct {
+		outPath string
+		want    string
+	}{
+		{"/media/Movies/Film (1999)/Film (1999).mp4", "mp4"},
+		{"/media/Movies/Film (1999)/Film (1999).mkv", "matroska"},
+		{"/media/TV/Show/Season 01/S01E01.MP4", "mp4"},
+	}
+	for _, c := range cases {
+		job := domain.Job{OutPath: c.outPath, WorkDir: "/work"}
+		if got := outputFormat(job); got != c.want {
+			t.Errorf("outputFormat(%q) = %q, want %q", c.outPath, got, c.want)
+		}
+	}
+
+	// End to end through the arg builder: a work-folder temp name must still
+	// produce "-f mp4" for an .mp4 download.
+	job := domain.Job{OutPath: "/media/Movies/Film.mp4", WorkDir: "/work"}
+	args := BuildRemuxArgs(job, "/work/Film.mp4-a1b2c3d4.ts", "/work/Film.mp4-a1b2c3d4.tmp")
+	found := false
+	for i, a := range args {
+		if a == "-f" && i+1 < len(args) && args[i+1] == "mp4" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("BuildRemuxArgs did not select the mp4 muxer: %v", args)
+	}
+}

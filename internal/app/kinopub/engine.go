@@ -369,7 +369,7 @@ func (e *engine) runHLS(ctx context.Context, cfg domain.RunConfig) (domain.RunRe
 				// paused, where partial data is kept for a later resume).
 				if e.deps.Paused == nil || !e.deps.Paused() {
 					if outPath, pathErr := e.deps.OutputLayout.EpisodePath(cfg.OutputPath, series, pe.ep); pathErr == nil {
-						os.RemoveAll(outPath + ".ts.hls-tmp")
+						os.RemoveAll(workTSPath(cfg, outPath) + ".hls-tmp")
 					}
 				}
 				mu.Lock()
@@ -776,7 +776,7 @@ func (e *engine) runHLS(ctx context.Context, cfg domain.RunConfig) (domain.RunRe
 			}
 			outcomes = append(outcomes, domain.JobOutcome{Key: pe.ep.Key, Err: err, Attempts: pe.attempts})
 			if outPath, pathErr := e.deps.OutputLayout.EpisodePath(cfg.OutputPath, series, pe.ep); pathErr == nil {
-				os.RemoveAll(outPath + ".ts.hls-tmp")
+				os.RemoveAll(workTSPath(cfg, outPath) + ".hls-tmp")
 			}
 		}
 	}
@@ -899,10 +899,13 @@ func (e *engine) attemptHLSEpisode(
 	if err := e.deps.OutputLayout.EnsureDirs(outPath); err != nil {
 		return epFatal, fmt.Errorf("create directory: %w", err)
 	}
+	if err := fsutil.EnsureWorkDir(cfg.WorkDir); err != nil {
+		return epFatal, err
+	}
 
 	e.deps.ProgressReporter.EpisodeStarted(ep.Key)
 
-	tsPath := outPath + ".ts"
+	tsPath := workTSPath(cfg, outPath)
 	hlsResult, dlErr := e.deps.HLSDownloader.DownloadEpisode(ctx, manifestURL, cfg.Quality, tsPath, ep.Key, e.deps.ProgressReporter)
 	if dlErr != nil {
 		if ctx.Err() != nil {
@@ -928,6 +931,7 @@ func (e *engine) attemptHLSEpisode(
 	muxJob := domain.Job{
 		Episode:     ep,
 		OutPath:     outPath,
+		WorkDir:     cfg.WorkDir,
 		PosterPath:  posterPath,
 		SeriesTitle: series.Title,
 	}
@@ -1219,6 +1223,14 @@ type downloadExecutor struct {
 func (d *downloadExecutor) Execute(ctx context.Context, job domain.Job) error {
 	d.reporter.EpisodeStarted(job.Episode.Key)
 	return d.downloader.Download(ctx, job, d.reporter)
+}
+
+// workTSPath is where the joined HLS stream (and, derived from it, the segment
+// directory) lives for an episode: next to the output file by default, or in
+// the configured work folder. Every site that creates, resumes from, or cleans
+// up those files must agree on it, so they all go through here.
+func workTSPath(cfg domain.RunConfig, outPath string) string {
+	return fsutil.WorkPath(cfg.WorkDir, outPath, ".ts")
 }
 
 // seriesDirPath computes the series download directory path — where the state

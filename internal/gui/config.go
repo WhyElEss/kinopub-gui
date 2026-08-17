@@ -32,6 +32,9 @@ type Settings struct {
 	// "films go where everything else goes".
 	OutputPath      string `json:"outputPath"`
 	MovieOutputPath string `json:"movieOutputPath"`
+	// WorkDir keeps a download's intermediate files out of the media library
+	// while it runs. Empty = next to the final file (see domain.RunConfig).
+	WorkDir string `json:"workDir"`
 	// DirTemplate / NameTemplate are the default output-path templates offered
 	// for every new download; the Movie* pair is offered instead when the item
 	// is a film. Each download can override whichever pair the UI picked. See
@@ -131,6 +134,8 @@ func (s *settingsStore) load() {
 	}
 	// Empty is a real value here: it means "films share the default folder".
 	merged.MovieOutputPath = loaded.MovieOutputPath
+	// Empty means "work next to the output file".
+	merged.WorkDir = loaded.WorkDir
 	// An empty template means "never set" (or a config file written before
 	// templates existed), so the default stands.
 	if loaded.DirTemplate != "" {
@@ -256,8 +261,11 @@ type RunRequest struct {
 	OutputPath string `json:"outputPath"`
 	// DirTemplate / NameTemplate override the saved defaults for this one
 	// download; empty falls back to the built-in default layout.
-	DirTemplate   string `json:"dirTemplate"`
-	NameTemplate  string `json:"nameTemplate"`
+	DirTemplate  string `json:"dirTemplate"`
+	NameTemplate string `json:"nameTemplate"`
+	// WorkDir for this run; the server fills it from the saved settings when the
+	// request leaves it empty.
+	WorkDir       string `json:"workDir"`
 	Quality       string `json:"quality"`
 	Container     string `json:"container"`
 	Concurrency   int    `json:"concurrency"`
@@ -355,6 +363,7 @@ func buildRunConfig(req RunRequest) (domain.RunConfig, error) {
 		OutputPath:       req.OutputPath,
 		DirTemplate:      dirTmpl,
 		NameTemplate:     nameTmpl,
+		WorkDir:          strings.TrimSpace(req.WorkDir),
 		MaxConcurrency:   req.Concurrency,
 		MaxRetries:       req.Retries,
 		MinIntervalMS:    req.MinIntervalMS,

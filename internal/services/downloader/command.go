@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -293,11 +294,8 @@ func BuildFFmpegArgs(job domain.Job, proxyEnv []string, auth domain.RequestAuth,
 	args = append(args, "-progress", "pipe:1")
 
 	// Output format must be specified explicitly because the temp file extension
-	// (.mkv.tmp) is not recognized by ffmpeg's format auto-detection.
-	outFormat := "matroska"
-	if strings.HasSuffix(strings.TrimSuffix(tempPath, ".tmp"), ".mp4") {
-		outFormat = "mp4"
-	}
+	// is not recognized by ffmpeg's format auto-detection.
+	outFormat := outputFormat(job)
 
 	// Container-level metadata (title, show, season/episode for media players).
 	if job.Episode.Title != "" {
@@ -358,12 +356,7 @@ func BuildRemuxArgs(job domain.Job, localInput, tempPath string) []string {
 	// Stream copy — no re-encoding.
 	args = append(args, "-c", "copy")
 
-	// Determine output format from the final extension.
-	outFormat := "matroska"
-	finalPath := strings.TrimSuffix(tempPath, ".tmp")
-	if strings.HasSuffix(finalPath, ".mp4") {
-		outFormat = "mp4"
-	}
+	outFormat := outputFormat(job)
 
 	// Container-level metadata.
 	if job.Episode.Title != "" {
@@ -447,12 +440,7 @@ func BuildHLSMuxArgs(job domain.Job, hls *domain.HLSDownloadResult, tempPath str
 		}
 	}
 
-	// Output format.
-	outFormat := "matroska"
-	finalPath := strings.TrimSuffix(tempPath, ".tmp")
-	if strings.HasSuffix(finalPath, ".mp4") {
-		outFormat = "mp4"
-	}
+	outFormat := outputFormat(job)
 
 	// Container metadata.
 	if job.Episode.Title != "" {
@@ -477,3 +465,17 @@ func BuildHLSMuxArgs(job domain.Job, hls *domain.HLSDownloadResult, tempPath str
 
 	return args
 }
+
+// outputFormat picks ffmpeg's muxer from the FINAL file's extension.
+//
+// It must not be derived from the temp path: that only worked while the temp
+// file was the output plus ".tmp". With a work folder the intermediate file is
+// named after a hash instead, and an .mp4 download would have been written as
+// Matroska into a file called .mp4.
+func outputFormat(job domain.Job) string {
+	if strings.EqualFold(filepath.Ext(job.OutPath), ".mp4") {
+		return "mp4"
+	}
+	return "matroska"
+}
+

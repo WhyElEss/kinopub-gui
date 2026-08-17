@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/ZioSHik/kinopub-gui/internal/domain"
+	"github.com/ZioSHik/kinopub-gui/internal/lib/fsutil"
 )
 
 // Compile-time interface assertions.
@@ -140,6 +141,14 @@ func (d *Downloader) Download(ctx context.Context, job domain.Job, sink domain.P
 	return d.downloadDirect(ctx, job, sink)
 }
 
+// workPath returns the path of one of this job's intermediate files. The work
+// directory (when set) also has to exist before ffmpeg or the chunked
+// downloader writes into it.
+func workPath(job domain.Job, suffix string) string {
+	_ = fsutil.EnsureWorkDir(job.WorkDir)
+	return fsutil.WorkPath(job.WorkDir, job.OutPath, suffix)
+}
+
 // downloadChunked implements the chunked HTTP Range download + ffmpeg remux.
 func (d *Downloader) downloadChunked(ctx context.Context, job domain.Job, sink domain.ProgressSink) error {
 	d.logger.Info("starting chunked download",
@@ -149,7 +158,7 @@ func (d *Downloader) downloadChunked(ctx context.Context, job domain.Job, sink d
 	)
 
 	// 1. Download raw file via chunked HTTP.
-	rawPath := job.OutPath + ".raw"
+	rawPath := workPath(job, ".raw")
 	chunked := NewChunked(d.httpClient, d.auth, d.logger)
 
 	if err := chunked.Download(ctx, job.Media.Source.URL, rawPath, job.Episode.Key, sink); err != nil {
@@ -196,7 +205,7 @@ func (d *Downloader) MuxHLS(ctx context.Context, job domain.Job, hls *domain.HLS
 		domain.F("output", job.OutPath),
 	)
 
-	tempPath := job.OutPath + ".tmp"
+	tempPath := workPath(job, ".tmp")
 	args := BuildHLSMuxArgs(job, hls, tempPath)
 
 	runErr := d.run(ctx, d.ffmpegPath, args, nil, nil)
@@ -211,9 +220,9 @@ func (d *Downloader) MuxHLS(ctx context.Context, job domain.Job, hls *domain.HLS
 		return domain.ErrEmptyOutput
 	}
 
-	if err := os.Rename(tempPath, job.OutPath); err != nil {
+	if err := fsutil.MoveFile(tempPath, job.OutPath); err != nil {
 		os.Remove(tempPath)
-		return fmt.Errorf("rename temp to final: %w", err)
+		return fmt.Errorf("move temp to final: %w", err)
 	}
 
 	return nil
@@ -230,7 +239,7 @@ func (d *Downloader) RemuxLocal(ctx context.Context, job domain.Job, localPath s
 		domain.F("output", job.OutPath),
 	)
 
-	tempPath := job.OutPath + ".tmp"
+	tempPath := workPath(job, ".tmp")
 	args := BuildRemuxArgs(job, localPath, tempPath)
 
 	// Run ffmpeg (no proxy env, no auth — local file).
@@ -246,9 +255,9 @@ func (d *Downloader) RemuxLocal(ctx context.Context, job domain.Job, localPath s
 		return domain.ErrEmptyOutput
 	}
 
-	if err := os.Rename(tempPath, job.OutPath); err != nil {
+	if err := fsutil.MoveFile(tempPath, job.OutPath); err != nil {
 		os.Remove(tempPath)
-		return fmt.Errorf("rename temp to final: %w", err)
+		return fmt.Errorf("move temp to final: %w", err)
 	}
 
 	return nil
@@ -269,7 +278,7 @@ func (d *Downloader) downloadDirect(ctx context.Context, job domain.Job, sink do
 	}
 
 	// 2. Compute temp path.
-	tempPath := job.OutPath + ".tmp"
+	tempPath := workPath(job, ".tmp")
 
 	// 3. Build ffmpeg args.
 	args := BuildFFmpegArgs(job, proxyEnv, d.auth, tempPath, d.extraArgs)
@@ -337,14 +346,14 @@ func (d *Downloader) downloadDirect(ctx context.Context, job domain.Job, sink do
 	}
 
 	// 8. Atomic rename to final path.
-	if err := os.Rename(tempPath, job.OutPath); err != nil {
-		d.logger.Error("rename failed",
+	if err := fsutil.MoveFile(tempPath, job.OutPath); err != nil {
+		d.logger.Error("move to final path failed",
 			domain.F("error", err.Error()),
 			domain.F("from", tempPath),
 			domain.F("to", job.OutPath),
 		)
 		_ = os.Remove(tempPath)
-		return fmt.Errorf("rename temp to final: %w", err)
+		return fmt.Errorf("move temp to final: %w", err)
 	}
 
 	d.logger.Info("download completed",

@@ -527,6 +527,11 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	// The work folder is an install-wide choice, not a per-download one, so it
+	// comes from the settings unless a caller states otherwise.
+	if req.WorkDir == "" {
+		req.WorkDir = s.settings.get().WorkDir
+	}
 	cfg, err := buildRunConfig(req.RunRequest)
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
