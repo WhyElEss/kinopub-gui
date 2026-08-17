@@ -3,6 +3,7 @@ package gui
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -120,9 +121,11 @@ func (s *Server) SetSelfUpdate(v bool) { s.selfUpdate = v }
 // credentials are available, which the UI surfaces and prompts to sign in.
 //
 // All routes sit behind guardLocalOnly, which protects this credential-holding
-// localhost server from web pages: it rejects requests whose Host is not a
-// loopback address (defeating DNS-rebinding) and cross-origin requests carrying
-// a foreign Origin (defeating a malicious site's direct fetch to 127.0.0.1).
+// server from web pages: it rejects requests whose Host is not a loopback
+// address (defeating DNS-rebinding) and cross-origin requests carrying a foreign
+// Origin (defeating a malicious site's direct fetch to 127.0.0.1). SetAllowLAN
+// widens the accepted Hosts to the local network; see hostAllowed for the
+// trade-off that makes.
 func (s *Server) Handler() http.Handler { return guardLocalOnly(s.mux, s.allowLAN) }
 
 // SetAllowLAN opens the server to other machines on the local network (see
@@ -468,7 +471,13 @@ func (s *Server) handlePutSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	saved, err := s.settings.save(in)
 	if err != nil {
-		writeErr(w, http.StatusInternalServerError, err.Error())
+		// A rejected template is the user's typo, not a server fault — and the UI
+		// shows the message, so the status has to say "fix your input".
+		status := http.StatusInternalServerError
+		if errors.Is(err, errInvalidSettings) {
+			status = http.StatusBadRequest
+		}
+		writeErr(w, status, err.Error())
 		return
 	}
 	s.mgr.setMaxActive(saved.MaxActiveJobs) // apply new concurrency limit (may dispatch queued jobs)

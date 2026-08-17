@@ -2,6 +2,7 @@ package gui
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,6 +18,11 @@ import (
 // defaultUserAgent matches the CLI: Cloudflare's cf_clearance is bound to the
 // UA that solved the challenge, so we default to a realistic Safari UA.
 const defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15"
+
+// errInvalidSettings marks a settings payload the user has to fix (a malformed
+// path template), so the HTTP layer can answer 400 rather than 500. It is the
+// prefix of the message the UI shows.
+var errInvalidSettings = errors.New("invalid setting")
 
 // Settings holds user-configurable GUI defaults persisted between sessions.
 type Settings struct {
@@ -185,7 +191,7 @@ func (s *settingsStore) save(in Settings) (Settings, error) {
 			*t.field = t.def
 		}
 		if err := outputlayout.ValidateTemplate(*t.field); err != nil {
-			return s.cur, fmt.Errorf("%s: %w", t.label, err)
+			return s.cur, fmt.Errorf("%w: %s: %s", errInvalidSettings, t.label, err)
 		}
 	}
 	if in.Concurrency < 1 {
