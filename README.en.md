@@ -6,6 +6,8 @@
 
 You sign in once, with a short device code. Nothing heavy under it — a single file, no Electron, no Node (a Go server with the React UI built in). Run it and you're set.
 
+> **This is a fork of [ZioSHik/kinopub-gui](https://github.com/ZioSHik/kinopub-gui)**, adapted for running on a home server. What differs from upstream: [folder and file-name templates](#6-file-names-and-folders) instead of the fixed `Title/Season NN/SNNENN` layout, a [`-lan`](#flags) flag for access over a local IP, a `-no-self-update` flag, and a [Docker build](#running-on-a-home-server-docker).
+
 <p align="center">
   <img src="docs/screenshots/catalog.png" alt="kino.pub downloader" width="900">
 </p>
@@ -31,7 +33,7 @@ You sign in once, with a short device code. Nothing heavy under it — a single 
 - 📚 **Library** — browse what you've already downloaded, with sizes, resolutions and missing-file detection; open a finished file or reveal its folder.
 - 🔐 **Sign in once** — a short device-code login; tokens are stored encrypted and machine-bound. Local features (Library, Doctor, Settings) work without signing in.
 - 🌍 **Bilingual** — English & Russian, switchable in one click (remembered between sessions).
-- 📦 **Single binary** — the UI is embedded; self-updates from GitHub releases.
+- 📦 **Single binary** — the UI is embedded, with no Electron or Node at runtime; or run it in Docker on a home server.
 
 ## Screenshots
 
@@ -63,50 +65,18 @@ You sign in once, with a short device code. Nothing heavy under it — a single 
 
 ## Install & run
 
-**Prebuilt clients for every major platform** — grab one from the [releases page](https://github.com/ZioSHik/kinopub-gui/releases):
+There are no prebuilt binaries: neither this fork nor upstream publishes GitHub releases (`ZioSHik/kinopub-gui/releases` is empty). Build it one of two ways.
 
-- 🍎 **macOS** — `.dmg` menu-bar app + standalone binaries, Apple Silicon (`arm64`) and Intel (`amd64`)
-- 🪟 **Windows** — `x64` (`amd64`) executable, no console window and an embedded icon
-- 🐧 **Linux** — `x64` (`amd64`, with a system-tray icon; also an `AppImage`) and `ARM64`
-- 🤖 **Android** — `ARM64` (no native tray, web UI as usual; runs under Termux)
+### Option A — Docker (home server, NAS, Raspberry Pi)
 
-Same single binary everywhere — the React UI is embedded, so there is nothing else to install.
-
-### Option A — download a release binary
-
-Grab `kinopub-gui-*` for your platform from the [releases page](https://github.com/ZioSHik/kinopub-gui/releases), then run it:
-
-```bash
-chmod +x kinopub-gui-darwin-arm64
-./kinopub-gui-darwin-arm64
-# → opens http://127.0.0.1:8765 in your browser
-```
-
-On **macOS** you can instead grab the `.dmg` and drag **KinoPub** to Applications — it runs as a menu-bar app (no Dock icon; the status-bar item has *Open* and *Quit*).
-
-The app isn't signed with an Apple certificate, so macOS blocks the first launch. Unblocking it is a one-time step:
-
-1. Drag **KinoPub** from the disk image into **Applications** and launch it from there.
-2. macOS will warn that it can't verify the app — dismiss the dialog (**Done**).
-3. Open **System Settings → Privacy & Security**, scroll down to the message about KinoPub and click **Open Anyway**, then confirm with your password or Touch ID.
-
-After that it opens normally. On older macOS (Sonoma and earlier) a right-click on the app → **Open** → **Open** is enough.
-
-On **Windows**, download `kinopub-gui-windows-amd64.exe` and run it (double-click or from a terminal):
-
-```powershell
-.\kinopub-gui-windows-amd64.exe
-# → opens http://127.0.0.1:8765 in your browser
-```
-
-> The binary is unsigned, so SmartScreen / Gatekeeper may warn on first run — on Windows choose **More info → Run anyway**; on macOS follow the steps above (**Privacy & Security → Open Anyway**). Windows Firewall may also prompt; the server only listens locally, so allowing private-network access is enough. Credentials are stored encrypted at `~/.config/kinopub/credentials.enc` (`%USERPROFILE%\.config\kinopub\credentials.enc` on Windows).
+The primary path in this fork — see [Running on a home server](#running-on-a-home-server-docker). Nothing to install besides Docker: ffmpeg and the UI are already in the image.
 
 ### Option B — build from source
 
 You need Go 1.26+ and Node 20+ (only to build the UI; not at runtime).
 
 ```bash
-git clone https://github.com/ZioSHik/kinopub-gui
+git clone https://github.com/WhyElEss/kinopub-gui
 cd kinopub-gui
 make run          # builds the web UI, builds the GUI binary, and launches it
 ```
@@ -116,31 +86,36 @@ Or step by step:
 ```bash
 make web          # build the React frontend into web/dist (embedded via go:embed)
 make gui          # build the ./kinopub-gui binary
-./kinopub-gui
+./kinopub-gui     # → opens http://127.0.0.1:8765 in your browser
 ```
 
-> **Distribution:** grab the prebuilt release binaries above, use `make`, or install from source with `go install github.com/ZioSHik/kinopub-gui/cmd/kinopub-gui@latest` — the module path matches this repo and the embedded `web/dist` is committed, so the install produces a complete, runnable binary. A plain `go build ./cmd/kinopub-gui` also works; `web/dist` is committed, and `make web` regenerates it.
+The binary is self-contained: the React UI is embedded via `go:embed` and the built `web/dist` is committed, so `go build ./cmd/kinopub-gui` works without Node (`make web` regenerates it when you touch the frontend). `make release-gui` cross-compiles for every platform, and `make dmg` packages the macOS app.
+
+> `go install github.com/ZioSHik/kinopub-gui/cmd/kinopub-gui@latest` installs **upstream**, without this fork's changes: the module path in `go.mod` is still upstream's, so that every import didn't have to be rewritten. For the fork, use `make` or Docker.
+
+Your own builds aren't signed by Apple or Microsoft, so macOS and Windows warn on first launch (**Privacy & Security → Open Anyway** / **More info → Run anyway**). Credentials are stored encrypted at `~/.config/kinopub/credentials.enc` (`%USERPROFILE%\.config\kinopub\credentials.enc` on Windows).
 
 ### Flags
 
 ```
 kinopub-gui [flags]
-  -addr      address to listen on (default 127.0.0.1:8765;
-             falls back to an ephemeral port if taken)
-  -no-open   do not open the browser automatically
-  -version   print version and exit
+  -addr            address to listen on (default 127.0.0.1:8765;
+                   falls back to an ephemeral port if taken)
+  -no-open         do not open the browser automatically
+  -lan             accept requests from the local network too
+  -no-self-update  disable the in-app updater (container/package installs)
+  -version         print version and exit
 ```
 
-The server listens on your computer only (`127.0.0.1`) — it's not a public service, nothing outside can reach it. It also rejects requests that don't come from its own page, so a random site in your browser can't quietly poke at it.
+By default the server listens on your computer only (`127.0.0.1`) — it's not a public service, nothing outside can reach it. It also rejects requests that don't come from its own page, so a random site in your browser can't quietly poke at it.
+
+`-lan` lifts that for your local network: together with `-addr 0.0.0.0:8765` the app becomes reachable at something like `http://192.168.2.200:8765` from any device in the house. Only private addresses (RFC1918, link-local), `*.local` names and single-label hostnames are accepted; public domains are still rejected. **The app has no login** — anyone who can reach the port gets the server's filesystem, its downloads and your kino.pub account. Don't port-forward it.
 
 ### Updating
 
-Prebuilt releases update themselves. **Settings → Software update** shows the
-current version, and an **Update & restart** button when a newer GitHub release is
-out. Hit it and the app downloads the new build for your system, checks its
-checksum, replaces itself in place and restarts; your open browser tab reconnects
-on its own. (Builds from source are tagged `dev` and don't self-update — rebuild
-with `make`.)
+Updating the fork means `git pull` and a rebuild (`make run`, or `docker compose up -d --build` for the container).
+
+Upstream's in-app updater is still in the code, but there is nothing here for it to find: it looks for releases in `ZioSHik/kinopub-gui`, and there are none — **Settings → Software update** simply shows the current version. In the container it is switched off with `-no-self-update` and says so in the UI.
 
 ---
 
@@ -186,9 +161,64 @@ Your choice is generalized across episodes and matched by language: if a chosen 
 - **Doctor** verifies files against the state file (missing, truncated, size mismatch, incomplete record, orphan `.tmp`) and repairs them in one click — a *Repair* toggle (drop broken entries and files) and a *Clean .tmp* toggle. It checks file presence and recorded size on disk — a fast, offline pass with no network round-trip.
 - **Library** scans your output folders for `.kinopub-state.json` files and lists everything you've downloaded, flagging files that have gone missing on disk. Open or reveal any file straight from the list.
 
-### 6. Settings
+### 6. File names and folders
 
-Defaults for new downloads (output folder, quality, container, concurrency, retries, throttle, proxy) plus extra folders to scan in the Library, the kino.pub sign-in, the ffmpeg installer and the software updater. Stored at `~/.config/kinopub/gui.json`.
+Where files land is decided by three things: the output folder (picked with a button) and two templates — **Folder** and **File name**. The full path is `<output folder>/<folder template>/<name template>.<mkv|mp4>`; the name template may contain `/` to nest deeper (that is how the season folder is made by default). What the result will look like is shown right under the fields.
+
+Tokens:
+
+| Token | Value |
+| --- | --- |
+| `{title}` | the title as kino.pub gives it, e.g. `Рик и Морти / Rick and Morty` |
+| `{ru}` | the Russian half of the title |
+| `{original}` | the original-language half (or the API's `subname`) |
+| `{year}` | release year |
+| `{season}`, `{episode}` | numbers; `{season:02}` zero-pads |
+| `{epTitle}` | episode title |
+| `{quality}` | quality, e.g. `1080p` |
+| `{id}` | the title's kino.pub id |
+
+A slash **inside** a value (in the title) does not create a folder — it becomes `_`; directories appear only where you typed `/` in the template itself. Empty components are dropped, and if a template collapses to nothing a fallback name is used (`series_<id>` / `S01E01`).
+
+The default templates are set in Settings, separately for series and for films, and the title window (**Where to save**) overrides them for one download. Out of the box:
+
+```
+series:  {title}          +  Season {season:02}/S{season:02}E{episode:02}
+films:   {ru} ({year})    +  {ru} ({year})
+```
+
+The film layout deliberately differs from upstream: `The Matrix (1999)/The Matrix (1999).mkv` is what Plex, Jellyfin and Emby expect, whereas a film inside `Season 01/S01E01.mkv` confuses them.
+
+> The state file `.kinopub-state.json` and the poster live in the series folder (the **Folder** template), so that template must always yield at least one directory — otherwise two titles in one folder would overwrite each other's state. Changing the template for an already-downloaded title makes the app treat it as new: the old files stay where they are, but "already downloaded" no longer attaches to them.
+
+### 7. Settings
+
+Defaults for new downloads (output folder, path templates, quality, container, concurrency, retries, throttle, proxy) plus extra folders to scan in the Library, the kino.pub sign-in, the ffmpeg installer and the software updater. Stored at `~/.config/kinopub/gui.json` (or `$XDG_CONFIG_HOME/kinopub/gui.json`).
+
+---
+
+## Running on a home server (Docker)
+
+For a NAS or a Raspberry Pi the repo ships a `Dockerfile` (UI + static binary + ffmpeg) and `deploy/docker-compose.yml`. It builds for whatever architecture it runs on — native arm64 on a Pi, no emulation.
+
+```bash
+git clone https://github.com/WhyElEss/kinopub-gui ~/kinopub-gui
+cd ~/kinopub-gui/deploy
+# adjust the volumes (your media library) and TZ
+docker compose up -d --build
+```
+
+Then open `http://<server-ip>:8765` from any device on the network and sign in to kino.pub with the device code.
+
+What matters about this setup:
+
+- the container starts with `-addr 0.0.0.0:8765 -lan -no-open -no-self-update`; **there is no authentication**, so keep the port inside your local network;
+- the folder picker in the UI browses the **container's** filesystem — only what you mounted can be chosen (`/mnt/share/Media` → `/media` in the example);
+- `user: "1000:1000"` — files are written as the media library's owner, not as root;
+- `/config` (settings and the encrypted kino.pub tokens) lives in the named volume `kinopub-config` rather than in the repo directory — otherwise a `git clone`/rsync over the sources would wipe the saved login. Read it with `docker run --rm -v kinopub-config:/c alpine cat /c/kinopub/gui.json`;
+- `KINOPUB_OUTPUT_DIR` seeds the output folder on first run (after that the value comes from settings);
+- `/etc/machine-id` is mounted from the host: the token encryption key derives from it, and without the file it falls back to the boot id, which changes on every reboot — the login would be lost each time;
+- the in-app updater is disabled: update the image by rebuilding (`docker compose up -d --build`).
 
 ---
 
@@ -231,6 +261,8 @@ internal/
   lib/              credstore (encrypted creds), httpx (uTLS), logx, audiomenu, …
 web/                React + Vite + Tailwind frontend
   dist/             built UI, embedded into the binary (go:embed)
+Dockerfile          image build: UI → static binary → Alpine with ffmpeg
+deploy/             docker-compose.yml for a home server
 ```
 
 ## Development
