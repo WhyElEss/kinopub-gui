@@ -603,6 +603,24 @@ func (m *JobManager) outputPaths() []string {
 	return paths
 }
 
+// hasActiveJobs reports whether any job still owns work in progress. A PAUSED
+// job counts: its partial segments are exactly what resuming it needs, so
+// nothing may sweep them away.
+func (m *JobManager) hasActiveJobs() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, j := range m.jobs {
+		j.mu.Lock()
+		active := j.status == statusQueued || j.status == statusResolving ||
+			j.status == statusRunning || j.status == statusPaused
+		j.mu.Unlock()
+		if active {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *JobManager) list() []JobView {
 	m.mu.RLock()
 	jobs := make([]*Job, 0, len(m.jobs))

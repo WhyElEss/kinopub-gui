@@ -826,6 +826,8 @@ func (s *Server) handleDoctor(w http.ResponseWriter, r *http.Request) {
 	if req.OutputDir == "" {
 		req.OutputDir = s.settings.get().OutputPath
 	}
+	req.WorkDir = s.settings.get().WorkDir
+	req.WorkDirBusy = s.mgr.hasActiveJobs()
 	report, err := runDoctor(r.Context(), req)
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())

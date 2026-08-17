@@ -453,6 +453,12 @@ const RU: Record<string, string> = {
   "Copy path": "Скопировать путь",
   "Path copied": "Путь скопирован",
   "Copy this path": "Скопируйте этот путь",
+  "Delete orphan temp files and empty the work folder": "Удалить осиротевшие временные файлы и очистить рабочую папку",
+  "Work folder skipped — a download is using it.": "Рабочая папка пропущена — её использует активная загрузка.",
+  "Work folder cleaned: {n} item(s), {size} freed": "Рабочая папка очищена: объектов — {n}, освобождено {size}",
+  "Work folder holds {n} leftover item(s), {size}. Enable “Clean .tmp” to remove them.":
+    "В рабочей папке осталось объектов: {n} ({size}). Включите «Очистить .tmp», чтобы удалить.",
+  "Work folder is empty.": "Рабочая папка пуста.",
   "An empty field falls back to the built-in default, shown above.":
     "Пустое поле — это встроенное значение по умолчанию, оно и показано выше.",
 };

@@ -423,6 +423,13 @@ export interface DoctorReport {
   fixed: boolean;
   hasIssues: boolean;
   issues: DoctorIssue[] | null;
+  // Work-folder summary; workDirBusy means it was skipped because a download
+  // is still using it.
+  workDir?: string;
+  workDirItems: number;
+  workDirBytes: number;
+  workDirRemoved: number;
+  workDirBusy: boolean;
   logs?: LogEntry[];
 }
 

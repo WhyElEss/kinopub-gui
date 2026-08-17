@@ -210,7 +210,9 @@ While a download runs, intermediate files appear next to the final one: the HLS 
 
 Keep it **on the same disk** as the output folders: then the finished file is moved by an instant `rename`. On a different filesystem the move falls back to a copy — an extra pass over every gigabyte, though the file still appears atomically. For a media server a hidden directory inside the library volume works well, e.g. `/media/.kinopub-tmp`: both Plex and the app's own Library skip dot-directories.
 
-Names inside the work folder are deterministic (the output's file name plus a hash of its full path), so an interrupted download finds its own segments after a restart and resumes, and two titles sharing a file name never collide. If a hard crash leaves something behind, the folder can simply be emptied while nothing is downloading.
+Names inside the work folder are deterministic (the output's file name plus a hash of its full path), so an interrupted download finds its own segments after a restart and resumes, and two titles sharing a file name never collide.
+
+Leftovers from a hard crash are handled by the **Doctor**: it reports how many items the work folder holds and how much space they take, and removes them when "Clean .tmp" is ticked. While any download is active — **including a paused one** — the folder is left completely alone and the Doctor says so: those files are exactly what a paused download resumes from.
 
 ### 9. Settings
 

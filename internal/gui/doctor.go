@@ -17,6 +17,10 @@ type DoctorRequest struct {
 	OutputDir string `json:"outputDir"`
 	Fix       bool   `json:"fix"`
 	CleanTmp  bool   `json:"cleanTmp"`
+	// WorkDir and WorkDirBusy are filled in by the server from the settings and
+	// the job queue; the UI does not send them.
+	WorkDir     string `json:"-"`
+	WorkDirBusy bool   `json:"-"`
 }
 
 // DoctorIssueView is a serialized doctor.Issue.
@@ -41,7 +45,15 @@ type DoctorReportView struct {
 	Fixed        bool              `json:"fixed"`
 	HasIssues    bool              `json:"hasIssues"`
 	Issues       []DoctorIssueView `json:"issues"`
-	Logs         []LogEntry        `json:"logs,omitempty"`
+	// Work-folder summary: what an interrupted download left behind, and how
+	// much of it this run removed. WorkDirBusy means the folder was skipped
+	// because a download is still using it.
+	WorkDir        string     `json:"workDir,omitempty"`
+	WorkDirItems   int        `json:"workDirItems"`
+	WorkDirBytes   int64      `json:"workDirBytes"`
+	WorkDirRemoved int        `json:"workDirRemoved"`
+	WorkDirBusy    bool       `json:"workDirBusy"`
+	Logs           []LogEntry `json:"logs,omitempty"`
 }
 
 func runDoctor(ctx context.Context, req DoctorRequest) (*DoctorReportView, error) {
@@ -103,6 +115,24 @@ func runDoctor(ctx context.Context, req DoctorRequest) (*DoctorReportView, error
 			})
 		}
 	}
+	// The work folder is global, not per-series, so it is scanned once — and
+	// only when the caller could not check the folders at all does the run fail.
+	if req.WorkDir != "" {
+		work, err := doctor.ScanWorkDir(req.WorkDir, req.WorkDirBusy, req.CleanTmp, logger)
+		if err != nil {
+			logger.Warn("work folder scan failed", domain.F("error", err.Error()))
+		} else {
+			view.WorkDir = work.Dir
+			view.WorkDirItems = len(work.Entries)
+			view.WorkDirBytes = work.Bytes
+			view.WorkDirRemoved = work.Removed
+			view.WorkDirBusy = work.Busy
+			if len(work.Entries) > 0 {
+				view.HasIssues = true
+			}
+		}
+	}
+
 	// Only surface an error if no series could be checked at all.
 	if view.StateFile == "" && firstErr != nil {
 		return nil, firstErr

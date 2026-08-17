@@ -69,7 +69,12 @@ export function DoctorPage() {
 
         <div className="grid gap-2 sm:grid-cols-2">
           <Toggle label={t("Repair (--fix)")} hint={t("Remove broken entries & files")} checked={fix} onChange={setFix} />
-          <Toggle label={t("Clean .tmp")} hint={t("Delete orphan temp files")} checked={cleanTmp} onChange={setCleanTmp} />
+          <Toggle
+            label={t("Clean .tmp")}
+            hint={t("Delete orphan temp files and empty the work folder")}
+            checked={cleanTmp}
+            onChange={setCleanTmp}
+          />
         </div>
 
         <button className="btn-primary" onClick={run} disabled={running || !dir}>
@@ -92,6 +97,8 @@ export function DoctorPage() {
             </p>
           )}
           <p className="truncate font-mono text-xs text-slate-600">{report.stateFile}</p>
+
+          {report.workDir && <WorkDirSummary report={report} />}
 
           {!report.hasIssues ? (
             <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] px-4 py-3 text-sm text-emerald-300">
@@ -125,6 +132,66 @@ export function DoctorPage() {
       <DirPicker open={pickDir} initial={dir} onClose={() => setPickDir(false)} onSelect={setDir} />
     </div>
   );
+}
+
+// WorkDirSummary reports what the work folder holds. It is deliberately its own
+// block rather than an "issue": leftovers there are not a fault in a download,
+// just space nobody freed.
+function WorkDirSummary({ report }: { report: DoctorReport }) {
+  const { t } = useI18n();
+  if (report.workDirBusy) {
+    return (
+      <div className="rounded-xl border border-white/[0.06] bg-ink-900/40 px-4 py-3 text-sm text-slate-400">
+        <p>{t("Work folder skipped — a download is using it.")}</p>
+        <p className="mt-1 truncate font-mono text-xs text-slate-600">{report.workDir}</p>
+      </div>
+    );
+  }
+  if (report.workDirRemoved > 0) {
+    return (
+      <div className="rounded-xl border border-gold-500/20 bg-gold-500/[0.07] px-4 py-3 text-sm text-gold-200">
+        <p>
+          <Wrench className="mr-1.5 inline h-4 w-4" />
+          {t("Work folder cleaned: {n} item(s), {size} freed", {
+            n: report.workDirRemoved,
+            size: bytes(report.workDirBytes),
+          })}
+        </p>
+        <p className="mt-1 truncate font-mono text-xs text-gold-200/50">{report.workDir}</p>
+      </div>
+    );
+  }
+  if (report.workDirItems > 0) {
+    return (
+      <div className="rounded-xl border border-ember-500/20 bg-ember-500/[0.06] px-4 py-3 text-sm text-ember-200">
+        <p>
+          {t("Work folder holds {n} leftover item(s), {size}. Enable “Clean .tmp” to remove them.", {
+            n: report.workDirItems,
+            size: bytes(report.workDirBytes),
+          })}
+        </p>
+        <p className="mt-1 truncate font-mono text-xs text-ember-200/50">{report.workDir}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] px-4 py-3 text-sm text-emerald-300">
+      <CheckCircle2 className="h-4 w-4" /> {t("Work folder is empty.")}
+    </div>
+  );
+}
+
+// bytes formats a size for the summary above.
+function bytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let v = n / 1024;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i++;
+  }
+  return `${v < 10 ? v.toFixed(1) : Math.round(v)} ${units[i]}`;
 }
 
 function Stat({ label, value, tone = "default" }: { label: string; value: number; tone?: "default" | "green" | "rose" | "slate" }) {
