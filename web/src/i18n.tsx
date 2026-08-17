@@ -452,6 +452,7 @@ const RU: Record<string, string> = {
   "Keep them next to the finished file": "Держать рядом с готовым файлом",
   "Copy path": "Скопировать путь",
   "Path copied": "Путь скопирован",
+  "Copy this path": "Скопируйте этот путь",
   "An empty field falls back to the built-in default, shown above.":
     "Пустое поле — это встроенное значение по умолчанию, оно и показано выше.",
 };

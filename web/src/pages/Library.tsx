@@ -74,10 +74,12 @@ function SeriesCard({ s, onDeleted, onOpenCard }: { s: LibrarySeries; onDeleted:
   const copyPath = async (path: string) => {
     if (await copyToClipboard(path)) {
       toast(t("Path copied"), "success");
-    } else {
-      // Copying can still be blocked; showing the path keeps it selectable.
-      toast(path, "info");
+      return;
     }
+    // Over plain HTTP the page is not a secure context, so the clipboard API is
+    // absent and execCommand may be refused. A prompt still shows the path
+    // preselected, which the user can copy by hand — that always works.
+    window.prompt(t("Copy this path"), path);
   };
 
   const remove = async () => {
