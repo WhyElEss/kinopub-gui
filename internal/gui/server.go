@@ -34,6 +34,12 @@ type Server struct {
 	restart  func() // set by main to re-exec the freshly installed binary
 	mux      *http.ServeMux
 
+	// allowLAN opens the guard to private-network hosts (-lan); selfUpdate is
+	// cleared by -no-self-update so a packaged/containerised build cannot
+	// replace its own binary underneath the image.
+	allowLAN   bool
+	selfUpdate bool
+
 	// kino.pub official-API device login (background poll) state.
 	kpMu    sync.Mutex
 	kpLogin *kpLoginSession
@@ -71,15 +77,16 @@ func NewServer(version string, static fs.FS) *Server {
 	ensureSystemToolsOnPath() // so a system ffmpeg (Homebrew, …) is found from a .app launch
 	hub := newHub()
 	s := &Server{
-		version:  version,
-		static:   static,
-		hub:      hub,
-		mgr:      newJobManager(hub),
-		settings: newSettingsStore(),
-		updater:  newUpdateChecker(version),
-		tools:    &toolInstaller{},
-		hlsKey:   randomKey(32),
-		hlsSem:   make(chan struct{}, 4),
+		version:    version,
+		static:     static,
+		hub:        hub,
+		mgr:        newJobManager(hub),
+		settings:   newSettingsStore(),
+		updater:    newUpdateChecker(version),
+		tools:      &toolInstaller{},
+		hlsKey:     randomKey(32),
+		hlsSem:     make(chan struct{}, 4),
+		selfUpdate: true,
 	}
 	// Teach the scheduler how to launch a job: resolve the single shared API
 	// client (nil when not signed in → run() fails the job with a clear message)
@@ -104,6 +111,9 @@ func NewServer(version string, static fs.FS) *Server {
 // an in-place update has been installed.
 func (s *Server) SetRestart(fn func()) { s.restart = fn }
 
+// SetSelfUpdate enables or disables the in-app updater (on by default).
+func (s *Server) SetSelfUpdate(v bool) { s.selfUpdate = v }
+
 // Handler returns the root http.Handler. There is no auth gate: local features
 // (Library, Doctor, Settings, the folder picker) work without signing in;
 // kino.pub operations (preview/download) fail with a clear error when no
@@ -113,17 +123,27 @@ func (s *Server) SetRestart(fn func()) { s.restart = fn }
 // localhost server from web pages: it rejects requests whose Host is not a
 // loopback address (defeating DNS-rebinding) and cross-origin requests carrying
 // a foreign Origin (defeating a malicious site's direct fetch to 127.0.0.1).
-func (s *Server) Handler() http.Handler { return guardLocalOnly(s.mux) }
+func (s *Server) Handler() http.Handler { return guardLocalOnly(s.mux, s.allowLAN) }
+
+// SetAllowLAN opens the server to other machines on the local network (see
+// hostAllowed). Off by default; the -lan flag turns it on for a home-server
+// install, where the LAN itself is the trust boundary.
+func (s *Server) SetAllowLAN(v bool) { s.allowLAN = v }
 
 // guardLocalOnly wraps the mux with anti-rebinding / anti-CSRF checks suitable
-// for a loopback-only control server.
-func guardLocalOnly(next http.Handler) http.Handler {
+// for a loopback-only control server. With allowLAN set, private-network hosts
+// are accepted too.
+func guardLocalOnly(next http.Handler, allowLAN bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !isLoopbackHost(r.Host) {
-			writeErr(w, http.StatusForbidden, "forbidden: this server only accepts loopback requests")
+		if !hostAllowed(r.Host, allowLAN) {
+			msg := "forbidden: this server only accepts loopback requests"
+			if !allowLAN {
+				msg += " (start it with -lan to allow your local network)"
+			}
+			writeErr(w, http.StatusForbidden, msg)
 			return
 		}
-		if origin := r.Header.Get("Origin"); origin != "" && !originAllowed(origin, r.Host) {
+		if origin := r.Header.Get("Origin"); origin != "" && !originAllowed(origin, r.Host, allowLAN) {
 			writeErr(w, http.StatusForbidden, "forbidden: cross-origin request")
 			return
 		}
@@ -131,13 +151,13 @@ func guardLocalOnly(next http.Handler) http.Handler {
 	})
 }
 
-// originAllowed reports whether a request's Origin is acceptable for this
-// loopback-only control server. It accepts an exact host match, or any loopback
-// origin — so localhost ↔ 127.0.0.1 ↔ ::1 mixups and the Vite dev proxy work
-// without weakening security: a real cross-site Origin (an external domain) is
-// still rejected, and the isLoopbackHost(r.Host) check above already defeats
-// DNS-rebinding regardless of Origin.
-func originAllowed(origin, host string) bool {
+// originAllowed reports whether a request's Origin is acceptable. It accepts an
+// exact host match, or any host the Host header itself would be accepted as — so
+// localhost ↔ 127.0.0.1 ↔ ::1 mixups and the Vite dev proxy work without
+// weakening security: a real cross-site Origin (an external domain) is still
+// rejected, and the hostAllowed(r.Host) check above already defeats
+// DNS-rebinding for the loopback-only case.
+func originAllowed(origin, host string, allowLAN bool) bool {
 	u, err := url.Parse(origin)
 	if err != nil || u.Host == "" {
 		return false
@@ -145,7 +165,44 @@ func originAllowed(origin, host string) bool {
 	if u.Host == host {
 		return true
 	}
-	return isLoopbackHost(u.Host)
+	return hostAllowed(u.Host, allowLAN)
+}
+
+// hostAllowed reports whether a Host header may reach the server: loopback
+// always, plus private-network and mDNS/single-label names when LAN access is
+// enabled.
+//
+// Accepting a private-IP Host deliberately gives up the DNS-rebinding defense
+// for those addresses — a public name CAN resolve to 192.168.x.y. That is the
+// trade the -lan flag makes explicit: on a home LAN, anyone who can reach the
+// port can already use this server, since it has no user accounts.
+func hostAllowed(host string, allowLAN bool) bool {
+	if isLoopbackHost(host) {
+		return true
+	}
+	return allowLAN && isPrivateHost(host)
+}
+
+// isPrivateHost reports whether a Host header names a machine that can only
+// exist on the local network: an RFC1918 / link-local / unique-local IP, an
+// mDNS ".local" name, or a bare single-label hostname (which public DNS cannot
+// serve).
+func isPrivateHost(host string) bool {
+	h, _, err := net.SplitHostPort(host)
+	if err != nil {
+		h = host
+	}
+	h = strings.TrimSuffix(strings.TrimPrefix(h, "["), "]")
+	if ip := net.ParseIP(h); ip != nil {
+		return ip.IsPrivate() || ip.IsLinkLocalUnicast()
+	}
+	if h == "" {
+		return false
+	}
+	if strings.HasSuffix(strings.ToLower(h), ".local") {
+		return true
+	}
+	return !strings.Contains(h, ".")
 }
 
 // isLoopbackHost reports whether the Host header refers to a loopback address.
@@ -357,11 +414,26 @@ func (s *Server) handleDepsInstall(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUpdateCheck(w http.ResponseWriter, r *http.Request) {
+	// Report "not supported" rather than an error: the UI renders the note in
+	// place of the update button, which is exactly the right thing to show when
+	// the binary is managed by something else (a container image, a package).
+	if !s.selfUpdate {
+		writeJSON(w, http.StatusOK, UpdateStatus{
+			Current:   s.version,
+			Supported: false,
+			Note:      "self-update is disabled for this build — update the container image instead",
+		})
+		return
+	}
 	force := r.URL.Query().Get("force") == "1"
 	writeJSON(w, http.StatusOK, s.updater.status(r.Context(), force))
 }
 
 func (s *Server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
+	if !s.selfUpdate {
+		writeErr(w, http.StatusForbidden, "self-update is disabled for this build")
+		return
+	}
 	// Run on a background context with a generous timeout so a slow download
 	// isn't aborted if the request context is cancelled mid-way. 10 minutes
 	// accommodates a ~10 MB asset even on a very slow route (~20 KB/s).

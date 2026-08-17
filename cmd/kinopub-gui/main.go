@@ -29,12 +29,16 @@ func main() {
 
 func run() int {
 	var (
-		addr        string
-		noOpen      bool
-		showVersion bool
+		addr         string
+		noOpen       bool
+		showVersion  bool
+		lan          bool
+		noSelfUpdate bool
 	)
 	flag.StringVar(&addr, "addr", "127.0.0.1:8765", "address to listen on (host:port)")
 	flag.BoolVar(&noOpen, "no-open", false, "do not open the browser automatically")
+	flag.BoolVar(&lan, "lan", false, "accept requests from the local network too (use with -addr 0.0.0.0:8765; there is no login, so anyone on the LAN gets full access)")
+	flag.BoolVar(&noSelfUpdate, "no-self-update", false, "disable the in-app updater (for container/package installs)")
 	flag.BoolVar(&showVersion, "version", false, "print version and exit")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "kinopub-gui %s — web interface for the kinopub downloader\n\n", version)
@@ -49,6 +53,8 @@ func run() int {
 	}
 
 	srv := gui.NewServer(version, web.Dist())
+	srv.SetAllowLAN(lan)
+	srv.SetSelfUpdate(!noSelfUpdate)
 
 	// Bind the listener up front so we know the final address (and can fall
 	// back to an ephemeral port if the preferred one is taken).

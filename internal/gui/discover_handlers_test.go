@@ -98,25 +98,52 @@ func TestHandleImage_EmptyURL(t *testing.T) {
 func TestOriginAllowed(t *testing.T) {
 	cases := []struct {
 		origin, host string
+		allowLAN     bool
 		want         bool
 	}{
-		{"http://127.0.0.1:8765", "127.0.0.1:8765", true}, // exact match
-		{"http://localhost:8765", "127.0.0.1:8765", true}, // loopback ↔ loopback
-		{"http://[::1]:8765", "127.0.0.1:8765", true},
-		{"http://evil.example.com", "127.0.0.1:8765", false},
-		{"not a url", "127.0.0.1:8765", false},
-		{"http://", "127.0.0.1:8765", false}, // empty host
+		{"http://127.0.0.1:8765", "127.0.0.1:8765", false, true}, // exact match
+		{"http://localhost:8765", "127.0.0.1:8765", false, true}, // loopback ↔ loopback
+		{"http://[::1]:8765", "127.0.0.1:8765", false, true},
+		{"http://evil.example.com", "127.0.0.1:8765", false, false},
+		{"not a url", "127.0.0.1:8765", false, false},
+		{"http://", "127.0.0.1:8765", false, false}, // empty host
+		// The page served over the LAN address posts back to it: same Origin and
+		// Host, so it passes even with LAN access off.
+		{"http://192.168.2.200:8765", "192.168.2.200:8765", false, true},
+		// A LAN origin against a different host is only allowed with -lan.
+		{"http://192.168.2.200:8765", "127.0.0.1:8765", false, false},
+		{"http://192.168.2.200:8765", "127.0.0.1:8765", true, true},
+		{"http://evil.example.com", "192.168.2.200:8765", true, false},
 	}
 	for _, c := range cases {
-		if got := originAllowed(c.origin, c.host); got != c.want {
-			t.Errorf("originAllowed(%q, %q) = %v, want %v", c.origin, c.host, got, c.want)
+		if got := originAllowed(c.origin, c.host, c.allowLAN); got != c.want {
+			t.Errorf("originAllowed(%q, %q, lan=%v) = %v, want %v", c.origin, c.host, c.allowLAN, got, c.want)
+		}
+	}
+}
+
+func TestIsPrivateHost(t *testing.T) {
+	cases := map[string]bool{
+		"192.168.2.200:8765": true,
+		"10.0.0.5":           true,
+		"172.16.3.9:8765":    true,
+		"[fd00::1]:8765":     true,
+		"nas-pi.local:8765":  true,
+		"nas-pi":             true,
+		"8.8.8.8:8765":       false,
+		"evil.example.com":   false,
+		"":                   false,
+	}
+	for host, want := range cases {
+		if got := isPrivateHost(host); got != want {
+			t.Errorf("isPrivateHost(%q) = %v, want %v", host, got, want)
 		}
 	}
 }
 
 func TestGuardLocalOnly_RejectsNonLoopbackHost(t *testing.T) {
 	called := false
-	guard := guardLocalOnly(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
+	guard := guardLocalOnly(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), false)
 	req := httptest.NewRequest("GET", "/api/health", nil)
 	req.Host = "evil.example.com"
 	w := httptest.NewRecorder()
@@ -126,12 +153,52 @@ func TestGuardLocalOnly_RejectsNonLoopbackHost(t *testing.T) {
 	}
 }
 
+func TestGuardLocalOnly_RejectsLANHostWithoutFlag(t *testing.T) {
+	called := false
+	guard := guardLocalOnly(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), false)
+	req := httptest.NewRequest("GET", "/api/health", nil)
+	req.Host = "192.168.2.200:8765"
+	w := httptest.NewRecorder()
+	guard.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden || called {
+		t.Errorf("LAN host without -lan: status=%d called=%v, want 403 and not called", w.Code, called)
+	}
+}
+
+func TestGuardLocalOnly_AllowsLANHostWithFlag(t *testing.T) {
+	called := false
+	guard := guardLocalOnly(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusOK)
+	}), true)
+	req := httptest.NewRequest("POST", "/api/jobs", nil)
+	req.Host = "192.168.2.200:8765"
+	req.Header.Set("Origin", "http://192.168.2.200:8765")
+	w := httptest.NewRecorder()
+	guard.ServeHTTP(w, req)
+	if w.Code != http.StatusOK || !called {
+		t.Errorf("LAN host with -lan: status=%d called=%v, want 200", w.Code, called)
+	}
+}
+
+func TestGuardLocalOnly_RejectsPublicHostEvenWithLAN(t *testing.T) {
+	called := false
+	guard := guardLocalOnly(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), true)
+	req := httptest.NewRequest("GET", "/api/health", nil)
+	req.Host = "kino.example.com"
+	w := httptest.NewRecorder()
+	guard.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden || called {
+		t.Errorf("public host with -lan: status=%d called=%v, want 403", w.Code, called)
+	}
+}
+
 func TestGuardLocalOnly_AllowsLoopback(t *testing.T) {
 	called := false
 	guard := guardLocalOnly(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 		w.WriteHeader(http.StatusOK)
-	}))
+	}), false)
 	req := httptest.NewRequest("GET", "/api/health", nil)
 	req.Host = "127.0.0.1:8765"
 	w := httptest.NewRecorder()
