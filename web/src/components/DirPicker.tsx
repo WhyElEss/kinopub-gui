@@ -59,7 +59,7 @@ export function DirPicker({
             </div>
           ) : error ? (
             <div className="p-4 text-sm text-ember-400">{error}</div>
-          ) : listing && listing.dirs.length > 0 ? (
+          ) : listing?.dirs?.length ? (
             listing.dirs.map((d) => (
               <button
                 key={d.path}

@@ -315,6 +315,21 @@ func TestHandleFS(t *testing.T) {
 	}
 }
 
+// A folder with no sub-folders must serialize "dirs" as [] — the picker reads
+// the field directly, and a null there took the whole UI down.
+func TestHandleFS_LeafDirSerializesEmptyList(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest("GET", "/api/fs?path="+t.TempDir(), nil)
+	w := httptest.NewRecorder()
+	s.handleFS(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	if body := w.Body.String(); strings.Contains(body, `"dirs":null`) {
+		t.Errorf("dirs must be [] for a leaf folder, got %s", body)
+	}
+}
+
 func TestHandleDoctor_EmptyDir(t *testing.T) {
 	s := newTestServer(t)
 	dir := t.TempDir() // no state files

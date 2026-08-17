@@ -427,7 +427,9 @@ export interface FSEntry {
 export interface FSListing {
   path: string;
   parent: string;
-  dirs: FSEntry[];
+  // Nullable on purpose: an older server serializes a folder with no
+  // sub-folders as null, and dereferencing that took the whole UI down.
+  dirs: FSEntry[] | null;
 }
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {

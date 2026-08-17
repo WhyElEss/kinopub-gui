@@ -86,7 +86,9 @@ func listDir(path string) (FSListing, error) {
 	if err != nil {
 		return FSListing{}, err
 	}
-	listing := FSListing{Path: abs, Parent: filepath.Dir(abs)}
+	// Dirs starts empty, not nil: a folder with no sub-folders must serialize as
+	// [] rather than null, which the picker would read as a missing list.
+	listing := FSListing{Path: abs, Parent: filepath.Dir(abs), Dirs: []FSEntry{}}
 	for _, e := range entries {
 		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
 			continue
