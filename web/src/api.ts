@@ -123,6 +123,8 @@ export interface UpdateStatus {
 
 export interface Settings {
   outputPath: string;
+  // Films go here instead, when set. Empty = same folder as everything else.
+  movieOutputPath: string;
   dirTemplate: string;
   nameTemplate: string;
   movieDirTemplate: string;

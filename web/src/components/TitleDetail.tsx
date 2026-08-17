@@ -122,7 +122,7 @@ export function TitleDetail({
         // A film and a series want different layouts, so which default pair
         // applies is only known now that the type is loaded.
         const serial = !!(d.seasons && d.seasons.length);
-        setOutputPath(settings.outputPath);
+        setOutputPath(serial ? settings.outputPath : settings.movieOutputPath || settings.outputPath);
         setDirTmpl(serial ? settings.dirTemplate : settings.movieDirTemplate);
         setNameTmpl(serial ? settings.nameTemplate : settings.movieNameTemplate);
         const keys = (d.seasons || []).flatMap((s) => s.episodes.map((e) => epKey(e.season, e.episode)));

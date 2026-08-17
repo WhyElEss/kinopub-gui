@@ -25,6 +25,7 @@ export function SettingsPage() {
   const [form, setForm] = useState<Settings>(settings);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [pickOutput, setPickOutput] = useState(false);
+  const [pickMovieOutput, setPickMovieOutput] = useState(false);
   const [pickLib, setPickLib] = useState(false);
 
   // Settings persist automatically on every edit (debounced) — no Save button.
@@ -110,14 +111,7 @@ export function SettingsPage() {
       <KinopubLogin />
 
       <div className="card space-y-4 p-5">
-        <Field label={t("Default output folder")}>
-          <button className="input flex items-center gap-2 text-left" onClick={() => setPickOutput(true)} type="button">
-            <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
-            <span className="truncate font-mono text-xs">{form.outputPath || t("Choose…")}</span>
-          </button>
-        </Field>
-
-        <div className="space-y-4 border-t border-white/[0.06] pt-4">
+        <div className="space-y-4">
           <div>
             <h3 className="text-sm font-semibold text-slate-200">{t("Default file layout")}</h3>
             <p className="mt-0.5 text-xs text-slate-500">
@@ -125,8 +119,14 @@ export function SettingsPage() {
             </p>
           </div>
 
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">{t("TV series")}</p>
+          <div className="space-y-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("TV series")}</p>
+            <Field label={t("Output folder")}>
+              <button className="input flex items-center gap-2 text-left" onClick={() => setPickOutput(true)} type="button">
+                <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
+                <span className="truncate font-mono text-xs">{form.outputPath || t("Choose…")}</span>
+              </button>
+            </Field>
             <OutputTemplates
               dirTemplate={form.dirTemplate}
               nameTemplate={form.nameTemplate}
@@ -138,13 +138,32 @@ export function SettingsPage() {
             />
           </div>
 
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">{t("Films")}</p>
+          <div className="space-y-3 border-t border-white/[0.06] pt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("Films")}</p>
+            <Field label={t("Output folder")}>
+              <button className="input flex items-center gap-2 text-left" onClick={() => setPickMovieOutput(true)} type="button">
+                <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
+                <span className="truncate font-mono text-xs">{form.movieOutputPath || form.outputPath || t("Choose…")}</span>
+              </button>
+              {/* Empty means "wherever series go", so say which folder that is
+                  instead of showing a blank field. */}
+              {!form.movieOutputPath ? (
+                <p className="mt-1 text-[11px] text-slate-500">{t("Same folder as series — pick another to split them.")}</p>
+              ) : (
+                <button
+                  type="button"
+                  className="mt-1 text-[11px] text-slate-400 hover:text-slate-200"
+                  onClick={() => set("movieOutputPath", "")}
+                >
+                  {t("Use the series folder")}
+                </button>
+              )}
+            </Field>
             <OutputTemplates
               dirTemplate={form.movieDirTemplate}
               nameTemplate={form.movieNameTemplate}
               onChange={(dir, name) => setTemplates("movieDirTemplate", dir, "movieNameTemplate", name)}
-              outputPath={form.outputPath}
+              outputPath={form.movieOutputPath || form.outputPath}
               values={SAMPLE_MOVIE}
               container={form.container}
               defaults={{ dir: DEFAULT_MOVIE_DIR_TEMPLATE, name: DEFAULT_MOVIE_NAME_TEMPLATE }}
@@ -234,6 +253,12 @@ export function SettingsPage() {
       <UpdateCard />
 
       <DirPicker open={pickOutput} initial={form.outputPath} onClose={() => setPickOutput(false)} onSelect={(p) => set("outputPath", p)} />
+      <DirPicker
+        open={pickMovieOutput}
+        initial={form.movieOutputPath || form.outputPath}
+        onClose={() => setPickMovieOutput(false)}
+        onSelect={(p) => set("movieOutputPath", p)}
+      />
       <DirPicker
         open={pickLib}
         initial={form.outputPath}

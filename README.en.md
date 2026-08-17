@@ -159,7 +159,7 @@ Your choice is generalized across episodes and matched by language: if a chosen 
 ### 5. Doctor & Library
 
 - **Doctor** verifies files against the state file (missing, truncated, size mismatch, incomplete record, orphan `.tmp`) and repairs them in one click — a *Repair* toggle (drop broken entries and files) and a *Clean .tmp* toggle. It checks file presence and recorded size on disk — a fast, offline pass with no network round-trip.
-- **Library** scans your output folders for `.kinopub-state.json` files and lists everything you've downloaded, flagging files that have gone missing on disk. Open or reveal any file straight from the list.
+- **Library** scans both output folders (plus any extras from Settings) for `.kinopub-state.json` files and lists everything you've downloaded, flagging files that have gone missing on disk. Open or reveal any file straight from the list.
 
 ### 6. File names and folders
 
@@ -180,7 +180,7 @@ Tokens:
 
 A slash **inside** a value (in the title) does not create a folder — it becomes `_`; directories appear only where you typed `/` in the template itself. Empty components are dropped, and if a template collapses to nothing a fallback name is used (`series_<id>` / `S01E01`).
 
-The default templates are set in Settings, separately for series and for films, and the title window (**Where to save**) overrides them for one download. Out of the box:
+Settings keeps **a separate set for series and for films** — its own output folder and its own pair of templates. The app picks the right set when you open a title: a series goes to, say, `/media/TV` and a film to `/media/Movies`. Leave the film folder unset and films land wherever series do. The title window (**Where to save**) overrides both the folder and the templates for one download. Out of the box:
 
 ```
 series:  {title}          +  Season {season:02}/S{season:02}E{episode:02}
@@ -193,7 +193,7 @@ The film layout deliberately differs from upstream: `The Matrix (1999)/The Matri
 
 ### 7. Settings
 
-Defaults for new downloads (output folder, path templates, quality, container, concurrency, retries, throttle, proxy) plus extra folders to scan in the Library, the kino.pub sign-in, the ffmpeg installer and the software updater. Stored at `~/.config/kinopub/gui.json` (or `$XDG_CONFIG_HOME/kinopub/gui.json`).
+Defaults for new downloads (output folders and path templates — separately for series and films, quality, container, concurrency, retries, throttle, proxy) plus extra folders to scan in the Library, the kino.pub sign-in, the ffmpeg installer and the software updater. Stored at `~/.config/kinopub/gui.json` (or `$XDG_CONFIG_HOME/kinopub/gui.json`).
 
 ---
 

@@ -440,6 +440,9 @@ const RU: Record<string, string> = {
   Reset: "Сбросить",
   "TV series": "Сериалы",
   Films: "Фильмы",
+  "Same folder as series — pick another to split them.":
+    "Та же папка, что и у сериалов — выберите другую, чтобы разделить.",
+  "Use the series folder": "Использовать папку сериалов",
 };
 
 interface I18nValue {

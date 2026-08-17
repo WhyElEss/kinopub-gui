@@ -26,7 +26,12 @@ var errInvalidSettings = errors.New("invalid setting")
 
 // Settings holds user-configurable GUI defaults persisted between sessions.
 type Settings struct {
-	OutputPath string `json:"outputPath"`
+	// OutputPath is the default output folder; MovieOutputPath overrides it for
+	// films, so a media library that keeps series and films apart (the usual
+	// Plex/Jellyfin split) needs no manual switching per download. Empty means
+	// "films go where everything else goes".
+	OutputPath      string `json:"outputPath"`
+	MovieOutputPath string `json:"movieOutputPath"`
 	// DirTemplate / NameTemplate are the default output-path templates offered
 	// for every new download; the Movie* pair is offered instead when the item
 	// is a film. Each download can override whichever pair the UI picked. See
@@ -124,6 +129,8 @@ func (s *settingsStore) load() {
 	if loaded.OutputPath != "" {
 		merged.OutputPath = loaded.OutputPath
 	}
+	// Empty is a real value here: it means "films share the default folder".
+	merged.MovieOutputPath = loaded.MovieOutputPath
 	// An empty template means "never set" (or a config file written before
 	// templates existed), so the default stands.
 	if loaded.DirTemplate != "" {

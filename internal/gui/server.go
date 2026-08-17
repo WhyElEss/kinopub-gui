@@ -940,8 +940,11 @@ func (s *Server) openPathAllowed(target string) bool {
 	return false
 }
 
-// libraryDirs returns the set of directories to scan for downloads: the default
-// output path plus any extra dirs the user configured.
+// libraryDirs returns the set of directories to scan for downloads: both default
+// output paths (series and films) plus any extra dirs the user configured. A
+// film folder that isn't scanned would leave films out of the Library and out of
+// the "already downloaded" marks, and would make deleting them fail the
+// inside-a-known-root check.
 func (s *Server) libraryDirs() []string {
 	cfg := s.settings.get()
 	seen := make(map[string]bool)
@@ -954,6 +957,7 @@ func (s *Server) libraryDirs() []string {
 		dirs = append(dirs, d)
 	}
 	add(cfg.OutputPath)
+	add(cfg.MovieOutputPath)
 	for _, d := range cfg.LibraryDirs {
 		add(d)
 	}

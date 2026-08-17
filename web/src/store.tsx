@@ -57,6 +57,7 @@ const emptyKpAuth: KPStatus = { loggedIn: false, pending: false };
 const emptyFFmpeg: FFmpegStatus = { ffmpegFound: false, ffprobeFound: false };
 const emptySettings: Settings = {
   outputPath: "",
+  movieOutputPath: "",
   dirTemplate: DEFAULT_DIR_TEMPLATE,
   nameTemplate: DEFAULT_NAME_TEMPLATE,
   movieDirTemplate: DEFAULT_MOVIE_DIR_TEMPLATE,

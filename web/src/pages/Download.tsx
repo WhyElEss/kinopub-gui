@@ -98,9 +98,13 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
   const isMovieLayout =
     form.dirTemplate === settings.movieDirTemplate && form.nameTemplate === settings.movieNameTemplate;
 
+  // Switching the preset moves the folder too — the whole point of the split is
+  // that films and series live in different libraries.
   const applyLayout = (kind: "series" | "movie") =>
     setForm((f) => ({
       ...f,
+      outputPath:
+        kind === "movie" ? settings.movieOutputPath || settings.outputPath : settings.outputPath,
       dirTemplate: kind === "movie" ? settings.movieDirTemplate : settings.dirTemplate,
       nameTemplate: kind === "movie" ? settings.movieNameTemplate : settings.nameTemplate,
     }));
