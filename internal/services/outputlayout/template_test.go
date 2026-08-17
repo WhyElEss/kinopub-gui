@@ -52,7 +52,7 @@ func TestEpisodePathTemplates(t *testing.T) {
 			name: "plex movie",
 			dir:  DefaultMovieDirTemplate, file: DefaultMovieNameTemplate,
 			season: 1, episode: 1,
-			want: filepath.Join("/out", "Рик и Морти (2013)", "Рик и Морти (2013).mkv"),
+			want: filepath.Join("/out", "Rick and Morty (2013)", "Rick and Morty (2013).mkv"),
 		},
 		{
 			name: "plex series",
@@ -182,5 +182,33 @@ func TestKnownTokensCoversEveryToken(t *testing.T) {
 		if err := ValidateTemplate("x" + tok); err != nil {
 			t.Errorf("advertised token %s does not validate: %v", tok, err)
 		}
+	}
+}
+
+// A film with no separate original title must still get a usable name: the
+// {original} the movie defaults use falls back to the Russian one.
+func TestMovieDefaultsFallBackToRussianTitle(t *testing.T) {
+	series := domain.Series{ID: "7", Title: "Даёшь молодёжь!", RussianTitle: "Даёшь молодёжь!", Year: 2009}
+	l := NewWithTemplates(domain.ContainerMKV, DefaultMovieDirTemplate, DefaultMovieNameTemplate)
+	got, err := l.EpisodePath("/out", series, domain.Episode{Key: domain.EpisodeKey{Season: 1, Episode: 1}})
+	if err != nil {
+		t.Fatalf("EpisodePath: %v", err)
+	}
+	want := filepath.Join("/out", "Даёшь молодёжь! (2009)", "Даёшь молодёжь! (2009).mkv")
+	if got != want {
+		t.Errorf("EpisodePath = %q, want %q", got, want)
+	}
+}
+
+// An empty template must resolve to the built-in default rather than to an
+// empty path component — the UI previews it that way and the download has to
+// match what was promised.
+func TestEmptyTemplatesUseDefaults(t *testing.T) {
+	empty := NewWithTemplates(domain.ContainerMKV, "", "")
+	explicit := NewWithTemplates(domain.ContainerMKV, DefaultDirTemplate, DefaultNameTemplate)
+	got, _ := empty.EpisodePath("/out", testSeries(), testEpisode(1, 2))
+	want, _ := explicit.EpisodePath("/out", testSeries(), testEpisode(1, 2))
+	if got != want {
+		t.Errorf("empty templates = %q, want the default layout %q", got, want)
 	}
 }

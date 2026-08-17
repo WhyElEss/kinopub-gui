@@ -6,8 +6,8 @@ import { useI18n } from "../i18n";
 // the server applies these same strings when a request leaves a template empty.
 export const DEFAULT_DIR_TEMPLATE = "{title}";
 export const DEFAULT_NAME_TEMPLATE = "Season {season:02}/S{season:02}E{episode:02}";
-export const DEFAULT_MOVIE_DIR_TEMPLATE = "{ru} ({year})";
-export const DEFAULT_MOVIE_NAME_TEMPLATE = "{ru} ({year})";
+export const DEFAULT_MOVIE_DIR_TEMPLATE = "{original} ({year})";
+export const DEFAULT_MOVIE_NAME_TEMPLATE = "{original} ({year})";
 
 // Sample values used for the preview line when a real title isn't known yet.
 export const SAMPLE_SERIES: TemplateValues = {
@@ -113,6 +113,11 @@ export function OutputTemplates({
 }) {
   const { t } = useI18n();
   const isDefault = dirTemplate === defaults.dir && nameTemplate === defaults.name;
+  // The server substitutes the built-in default for an empty template, so the
+  // preview has to do the same — otherwise clearing a field promises a path the
+  // download would not use.
+  const effectiveDir = dirTemplate.trim() || DEFAULT_DIR_TEMPLATE;
+  const effectiveName = nameTemplate.trim() || DEFAULT_NAME_TEMPLATE;
 
   return (
     <div className="space-y-3">
@@ -121,6 +126,7 @@ export function OutputTemplates({
           <input
             className="input font-mono text-xs"
             value={dirTemplate}
+            placeholder={DEFAULT_DIR_TEMPLATE}
             spellCheck={false}
             onChange={(e) => onChange(e.target.value, nameTemplate)}
           />
@@ -129,6 +135,7 @@ export function OutputTemplates({
           <input
             className="input font-mono text-xs"
             value={nameTemplate}
+            placeholder={DEFAULT_NAME_TEMPLATE}
             spellCheck={false}
             onChange={(e) => onChange(dirTemplate, e.target.value)}
           />
@@ -138,8 +145,13 @@ export function OutputTemplates({
       <div className="rounded-lg bg-white/[0.03] px-3 py-2">
         <p className="text-[11px] uppercase tracking-wide text-slate-500">{t("Will be saved as")}</p>
         <p className="mt-0.5 break-all font-mono text-xs text-gold-300">
-          {previewPath(outputPath, dirTemplate, nameTemplate, values, container === "mp4" ? "mp4" : "mkv")}
+          {previewPath(outputPath, effectiveDir, effectiveName, values, container === "mp4" ? "mp4" : "mkv")}
         </p>
+        {(!dirTemplate.trim() || !nameTemplate.trim()) && (
+          <p className="mt-1 text-[11px] text-slate-500">
+            {t("An empty field falls back to the built-in default, shown above.")}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">

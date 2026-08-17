@@ -28,10 +28,12 @@ const (
 // Movie defaults deliberately differ from the series ones: a film has no
 // seasons, and every media server (Plex, Jellyfin, Emby) expects
 // "<Name> (<year>)/<Name> (<year>).mkv" rather than a Season 01 folder holding
-// an S01E01 file.
+// an S01E01 file. The original title is used rather than the Russian one because
+// that is what those servers match against their metadata sources; {original}
+// falls back to the Russian title when a film has no original one.
 const (
-	DefaultMovieDirTemplate  = "{ru} ({year})"
-	DefaultMovieNameTemplate = "{ru} ({year})"
+	DefaultMovieDirTemplate  = "{original} ({year})"
+	DefaultMovieNameTemplate = "{original} ({year})"
 )
 
 // tokenValues holds the substitution values for one episode.

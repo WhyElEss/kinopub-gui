@@ -443,6 +443,8 @@ const RU: Record<string, string> = {
   "Same folder as series — pick another to split them.":
     "Та же папка, что и у сериалов — выберите другую, чтобы разделить.",
   "Use the series folder": "Использовать папку сериалов",
+  "An empty field falls back to the built-in default, shown above.":
+    "Пустое поле — это встроенное значение по умолчанию, оно и показано выше.",
 };
 
 interface I18nValue {

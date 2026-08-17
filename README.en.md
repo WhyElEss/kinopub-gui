@@ -183,11 +183,13 @@ A slash **inside** a value (in the title) does not create a folder — it become
 Settings keeps **a separate set for series and for films** — its own output folder and its own pair of templates. The app picks the right set when you open a title: a series goes to, say, `/media/TV` and a film to `/media/Movies`. Leave the film folder unset and films land wherever series do. The title window (**Where to save**) overrides both the folder and the templates for one download. Out of the box:
 
 ```
-series:  {title}          +  Season {season:02}/S{season:02}E{episode:02}
-films:   {ru} ({year})    +  {ru} ({year})
+series:  {title}                +  Season {season:02}/S{season:02}E{episode:02}
+films:   {original} ({year})   +  {original} ({year})
 ```
 
-The film layout deliberately differs from upstream: `The Matrix (1999)/The Matrix (1999).mkv` is what Plex, Jellyfin and Emby expect, whereas a film inside `Season 01/S01E01.mkv` confuses them.
+The film layout deliberately differs from upstream: `The Matrix (1999)/The Matrix (1999).mkv` is what Plex, Jellyfin and Emby expect (they match metadata on the original title), whereas a film inside `Season 01/S01E01.mkv` confuses them. When a film has no separate original title, `{original}` falls back to the Russian one.
+
+**An empty field does not mean "no folder":** the server and the preview both substitute the built-in default there. The folder template always yields at least one directory — see the note below.
 
 > The state file `.kinopub-state.json` and the poster live in the series folder (the **Folder** template), so that template must always yield at least one directory — otherwise two titles in one folder would overwrite each other's state. Changing the template for an already-downloaded title makes the app treat it as new: the old files stay where they are, but "already downloaded" no longer attaches to them.
 
