@@ -193,7 +193,16 @@ The film layout deliberately differs from upstream: `The Matrix (1999)/The Matri
 
 > The state file `.kinopub-state.json` and the poster live in the series folder (the **Folder** template), so that template must always yield at least one directory — otherwise two titles in one folder would overwrite each other's state. Changing the template for an already-downloaded title makes the app treat it as new: the old files stay where they are, but "already downloaded" no longer attaches to them.
 
-### 7. Settings
+### 7. Quality
+
+Two entries in the quality dropdown are not resolutions:
+
+- **Auto (optimal)** (the empty value) — a bitrate compromise: 1080p h264 up to ~3000 kbps, else the best 720p. It is the default, and it never reaches 2160p.
+- **Maximum** — the highest-bandwidth variant available; the only one that picks up 4K when the file exists.
+
+The rest are explicit resolutions (`1080p`, `720p`, …), listed from what the title actually offers. The default lives in Settings; a single download overrides it in the title window.
+
+### 8. Settings
 
 Defaults for new downloads (output folders and path templates — separately for series and films, quality, container, concurrency, retries, throttle, proxy) plus extra folders to scan in the Library, the kino.pub sign-in, the ffmpeg installer and the software updater. Stored at `~/.config/kinopub/gui.json` (or `$XDG_CONFIG_HOME/kinopub/gui.json`).
 

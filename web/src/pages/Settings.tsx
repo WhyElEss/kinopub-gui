@@ -174,7 +174,8 @@ export function SettingsPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t("Default quality")}>
             <select className="input" value={form.quality} onChange={(e) => set("quality", e.target.value)}>
-              <option value="">{t("Auto (highest)")}</option>
+              <option value="">{t("Auto (optimal)")}</option>
+              <option value="max">{t("Maximum")}</option>
               <option value="2160p">2160p · 4K</option>
               <option value="1080p">1080p</option>
               <option value="720p">720p</option>

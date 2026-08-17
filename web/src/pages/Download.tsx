@@ -20,7 +20,10 @@ import { OutputTemplates, SAMPLE_MOVIE, SAMPLE_SERIES } from "../components/Outp
 import { InstallFFmpeg } from "../components/InstallFFmpeg";
 
 const QUALITIES = [
-  { v: "", label: "Auto (highest)" },
+  // "" is the engine's "optimal" pick (a bandwidth sweet spot, not the biggest
+  // file); "max" is the highest-bandwidth variant on offer.
+  { v: "", label: "Auto (optimal)" },
+  { v: "max", label: "Maximum" },
   { v: "2160p", label: "2160p · 4K" },
   { v: "1080p", label: "1080p" },
   { v: "720p", label: "720p" },
@@ -248,7 +251,7 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
             <select className="input" value={form.quality} onChange={(e) => set("quality", e.target.value)}>
               {QUALITIES.map((q) => (
                 <option key={q.v} value={q.v}>
-                  {q.v === "" ? t("Auto (highest)") : q.label}
+                  {q.v === "" || q.v === "max" ? t(q.label) : q.label}
                 </option>
               ))}
             </select>

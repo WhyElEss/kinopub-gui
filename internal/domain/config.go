@@ -3,7 +3,11 @@ package domain
 import "time"
 
 // Quality represents a video quality preference (e.g., "1080p").
-// An empty string means auto/highest.
+//
+// Two keywords are not resolutions: "" (or "optimal") picks a bandwidth sweet
+// spot — 1080p h264 up to ~3000 kbps, falling back to 720p — while "max" picks
+// the highest-bandwidth variant on offer, which is the only value that reaches
+// 2160p. See hlsdownloader.SelectVariant.
 type Quality string
 
 // Verbosity controls the minimum log level displayed on interactive output.

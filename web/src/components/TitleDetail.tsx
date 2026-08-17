@@ -27,7 +27,7 @@ import { Player } from "./Player";
 import { DirPicker } from "./DirPicker";
 import { OutputTemplates, previewPath, type TemplateValues } from "./OutputTemplates";
 
-const QUALITIES = ["", "2160p", "1080p", "720p", "480p", "360p"];
+const QUALITIES = ["", "max", "2160p", "1080p", "720p", "480p", "360p"];
 
 // Last download voiceover choice, remembered across titles/seasons so the same
 // dub is pre-selected next time. Stored as normalized dub names (see normDub).
@@ -551,9 +551,9 @@ export function TitleDetail({
           {/* Download bar */}
           <div className="flex flex-wrap items-center gap-3 border-t border-white/[0.05] pt-4">
             <select className="input w-auto" value={quality} onChange={(e) => setQuality(e.target.value)}>
-              {["", ...(detail.qualities?.length ? detail.qualities : QUALITIES.filter(Boolean))].map((q) => (
+              {["", "max", ...(detail.qualities?.length ? detail.qualities : QUALITIES.filter((q) => q && q !== "max"))].map((q) => (
                 <option key={q} value={q}>
-                  {q === "" ? t("Auto (highest)") : q}
+                  {q === "" ? t("Auto (optimal)") : q === "max" ? t("Maximum") : q}
                 </option>
               ))}
             </select>
