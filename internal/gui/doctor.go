@@ -133,9 +133,15 @@ func runDoctor(ctx context.Context, req DoctorRequest) (*DoctorReportView, error
 		}
 	}
 
-	// Only surface an error if no series could be checked at all.
+	// Fail the run only when there is genuinely nothing to report: no series
+	// checked AND no work folder to summarize. Otherwise "this folder holds no
+	// downloads" must not hide the work-folder result, which is global and the
+	// reason many runs are started in the first place.
 	if view.StateFile == "" && firstErr != nil {
-		return nil, firstErr
+		if view.WorkDir == "" {
+			return nil, firstErr
+		}
+		logger.Warn("no downloads to check in this folder", domain.F("error", firstErr.Error()))
 	}
 	view.Logs = capture.entries
 	return view, nil
