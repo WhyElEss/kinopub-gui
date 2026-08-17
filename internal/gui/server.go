@@ -309,7 +309,8 @@ func (s *Server) routes() {
 
 func (s *Server) snapshot() map[string]any {
 	return map[string]any{
-		"version":  s.version,
+		"version":      s.version,
+		"canOpenFiles": canOpenInOS(),
 		"jobs":     s.mgr.list(),
 		"kpauth":   s.kpStatus(),
 		"ffmpeg":   ffmpegStatus(),
@@ -907,6 +908,13 @@ func (s *Server) handleOpenPath(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, err := os.Stat(body.Path); err != nil {
 		writeErr(w, http.StatusNotFound, "file not found")
+		return
+	}
+	if !canOpenInOS() {
+		// Not a server fault and not something a retry fixes: this install has no
+		// desktop to open anything in.
+		writeErr(w, http.StatusNotImplemented,
+			"this server has no desktop session to open files in — copy the path and open it from your own machine")
 		return
 	}
 	if err := openInOS(body.Path, body.Reveal); err != nil {

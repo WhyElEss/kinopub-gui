@@ -38,6 +38,9 @@ interface AppContextValue {
   kpUser: KPUser | null;
   kpUserError: boolean;
   ffmpeg: FFmpegStatus;
+  // Whether the SERVER can open a file in a desktop app. Combined with
+  // pageIsLocal below to decide whether "Open" is worth offering at all.
+  canOpenFiles: boolean;
   settings: Settings;
   settingsLoaded: boolean;
   update: UpdateStatus | null;
@@ -90,6 +93,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [kpUser, setKpUser] = useState<KPUser | null>(null);
   const [kpUserError, setKpUserError] = useState(false);
   const [ffmpeg, setFFmpeg] = useState<FFmpegStatus>(emptyFFmpeg);
+  const [canOpenFiles, setCanOpenFiles] = useState(false);
   const [settings, setSettings] = useState<Settings>(emptySettings);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [update, setUpdate] = useState<UpdateStatus | null>(null);
@@ -136,6 +140,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setJobs(sortJobs(snap.jobs || []));
     setKpAuth(snap.kpauth || emptyKpAuth);
     setFFmpeg(snap.ffmpeg || emptyFFmpeg);
+    setCanOpenFiles(!!snap.canOpenFiles);
     setSettings(snap.settings || emptySettings);
     setSettingsLoaded(true);
   };
@@ -256,6 +261,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     () => ({
       connected,
       version,
+      canOpenFiles,
       jobs,
       kpauth,
       kpUser,
@@ -273,7 +279,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       dismissToast,
     }),
-    [connected, version, jobs, kpauth, kpUser, kpUserError, ffmpeg, settings, settingsLoaded, update, ffmpegInstall, toasts],
+    [connected, version, canOpenFiles, jobs, kpauth, kpUser, kpUserError, ffmpeg, settings, settingsLoaded, update, ffmpegInstall, toasts],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

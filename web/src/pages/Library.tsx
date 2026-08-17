@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clapperboard, Film, FolderOpen, HardDrive, Library as LibraryIcon, Play, RefreshCw, Trash2, Tv, XCircle } from "lucide-react";
+import { CheckCircle2, Clapperboard, ClipboardCopy, Film, FolderOpen, HardDrive, Library as LibraryIcon, Play, RefreshCw, Trash2, Tv, XCircle } from "lucide-react";
 import { api, type LibraryEpisode, type LibraryResponse, type LibrarySeries } from "../api";
 import { useApp } from "../store";
 import { useI18n } from "../i18n";
@@ -17,9 +17,45 @@ function itemIdOf(s: LibrarySeries): string {
   return "";
 }
 
+// pageIsLocal reports whether the browser and the server are the same machine.
+// Handing a file to the SERVER's desktop is only useful then; from another
+// device it would open the film on the server, where nobody is watching.
+function pageIsLocal(): boolean {
+  const h = window.location.hostname;
+  return h === "localhost" || h === "127.0.0.1" || h === "::1" || h === "[::1]";
+}
+
+// copyToClipboard works on a plain-HTTP LAN origin too, where the async
+// clipboard API is unavailable because the page is not a secure context.
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (window.isSecureContext && navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through to the legacy path */
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function SeriesCard({ s, onDeleted, onOpenCard }: { s: LibrarySeries; onDeleted: () => void; onOpenCard: (id: string) => void }) {
   const { t } = useI18n();
-  const { toast, kpauth } = useApp();
+  const { toast, kpauth, canOpenFiles } = useApp();
+  // Offer "Open" only when it can actually do something for THIS viewer.
+  const canOpen = canOpenFiles && pageIsLocal();
   const itemId = itemIdOf(s);
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -32,6 +68,15 @@ function SeriesCard({ s, onDeleted, onOpenCard }: { s: LibrarySeries; onDeleted:
       await api.openPath(path, reveal);
     } catch (e: any) {
       toast(e.message || t("Could not open"), "error");
+    }
+  };
+
+  const copyPath = async (path: string) => {
+    if (await copyToClipboard(path)) {
+      toast(t("Path copied"), "success");
+    } else {
+      // Copying can still be blocked; showing the path keeps it selectable.
+      toast(path, "info");
     }
   };
 
@@ -109,9 +154,15 @@ function SeriesCard({ s, onDeleted, onOpenCard }: { s: LibrarySeries; onDeleted:
                 <Clapperboard className="h-3.5 w-3.5" /> {t("Open card")}
               </button>
             )}
-            <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => openPath(s.dir)}>
-              <FolderOpen className="h-3.5 w-3.5" /> {t("Open folder")}
-            </button>
+            {canOpen ? (
+              <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => openPath(s.dir)}>
+                <FolderOpen className="h-3.5 w-3.5" /> {t("Open folder")}
+              </button>
+            ) : (
+              <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => copyPath(s.dir)}>
+                <ClipboardCopy className="h-3.5 w-3.5" /> {t("Copy path")}
+              </button>
+            )}
             <button
               className="btn-ghost px-3 py-1.5 text-xs text-ember-300 hover:bg-ember-500/10 hover:text-ember-200"
               onClick={remove}
@@ -135,10 +186,10 @@ function SeriesCard({ s, onDeleted, onOpenCard }: { s: LibrarySeries; onDeleted:
                 {e.exists && (
                   <button
                     className="shrink-0 rounded-md p-1 text-slate-500 opacity-0 transition hover:bg-white/[0.08] hover:text-gold-300 group-hover:opacity-100"
-                    title={t("Open")}
-                    onClick={() => openPath(e.path)}
+                    title={canOpen ? t("Open") : t("Copy path")}
+                    onClick={() => (canOpen ? openPath(e.path) : copyPath(e.path))}
                   >
-                    <Play className="h-3.5 w-3.5" />
+                    {canOpen ? <Play className="h-3.5 w-3.5" /> : <ClipboardCopy className="h-3.5 w-3.5" />}
                   </button>
                 )}
                 <button

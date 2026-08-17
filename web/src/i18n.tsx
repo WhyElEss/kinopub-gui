@@ -450,6 +450,8 @@ const RU: Record<string, string> = {
     "Держит сегменты и недописанные файлы вне медиатеки. Лучше на том же диске, что и папки загрузки — тогда готовый файл переносится мгновенно, а не копируется.",
   "Next to the finished file": "Рядом с готовым файлом",
   "Keep them next to the finished file": "Держать рядом с готовым файлом",
+  "Copy path": "Скопировать путь",
+  "Path copied": "Путь скопирован",
   "An empty field falls back to the built-in default, shown above.":
     "Пустое поле — это встроенное значение по умолчанию, оно и показано выше.",
 };

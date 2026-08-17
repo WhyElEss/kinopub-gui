@@ -147,6 +147,8 @@ export interface Settings {
 
 export interface Snapshot {
   version: string;
+  // False on a server install: there is no desktop session to hand a file to.
+  canOpenFiles?: boolean;
   jobs: JobView[];
   kpauth: KPStatus;
   ffmpeg: FFmpegStatus;

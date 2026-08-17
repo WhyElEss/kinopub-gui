@@ -101,6 +101,24 @@ func listDir(path string) (FSListing, error) {
 	return listing, nil
 }
 
+// canOpenInOS reports whether this machine can hand a file to a desktop
+// handler. A server install has no desktop session — in a container there is
+// not even an xdg-open binary — so the UI must not offer "Open" there: the file
+// would open on the SERVER anyway, which is useless to someone looking at the
+// page from another machine.
+func canOpenInOS() bool {
+	switch runtime.GOOS {
+	case "windows":
+		return true // explorer.exe is always present
+	case "darwin":
+		_, err := exec.LookPath("open")
+		return err == nil
+	default:
+		_, err := exec.LookPath("xdg-open")
+		return err == nil
+	}
+}
+
 // openInOS opens a file or folder with the OS default handler. When reveal is
 // true it selects/reveals the item in the file manager instead of opening it.
 func openInOS(path string, reveal bool) error {
