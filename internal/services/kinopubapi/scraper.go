@@ -72,11 +72,13 @@ func (s *Scraper) ExtractAllSeasons(ctx context.Context, baseURL string) (*domai
 func BuildPagePlaylist(item Item) (*domain.PagePlaylist, error) {
 	id, _ := strconv.Atoi(item.ID.String())
 	pl := &domain.PagePlaylist{
-		ItemID: id,
-		Title:  item.Title,
-		Poster: item.Posters.Best(),
-		Type:   item.Type,
-		Genres: genreTitles(item.Genres),
+		ItemID:  id,
+		Title:   item.Title,
+		Subname: item.Subname,
+		Year:    item.Year,
+		Poster:  item.Posters.Best(),
+		Type:    item.Type,
+		Genres:  genreTitles(item.Genres),
 	}
 	seasonCounts := map[int]int{}
 

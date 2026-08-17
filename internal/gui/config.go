@@ -11,6 +11,7 @@ import (
 
 	"github.com/ZioSHik/kinopub-gui/internal/app/kinopub"
 	"github.com/ZioSHik/kinopub-gui/internal/domain"
+	"github.com/ZioSHik/kinopub-gui/internal/services/outputlayout"
 )
 
 // defaultUserAgent matches the CLI: Cloudflare's cf_clearance is bound to the
@@ -19,7 +20,16 @@ const defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleW
 
 // Settings holds user-configurable GUI defaults persisted between sessions.
 type Settings struct {
-	OutputPath    string   `json:"outputPath"`
+	OutputPath string `json:"outputPath"`
+	// DirTemplate / NameTemplate are the default output-path templates offered
+	// for every new download; the Movie* pair is offered instead when the item
+	// is a film. Each download can override whichever pair the UI picked. See
+	// services/outputlayout for the token syntax.
+	DirTemplate       string `json:"dirTemplate"`
+	NameTemplate      string `json:"nameTemplate"`
+	MovieDirTemplate  string `json:"movieDirTemplate"`
+	MovieNameTemplate string `json:"movieNameTemplate"`
+
 	Quality       string   `json:"quality"`
 	Container     string   `json:"container"`
 	Concurrency   int      `json:"concurrency"`
@@ -43,7 +53,12 @@ func defaultSettings() Settings {
 		out = filepath.Join(home, "Downloads", "kinopub")
 	}
 	return Settings{
-		OutputPath:    out,
+		OutputPath:        out,
+		DirTemplate:       outputlayout.DefaultDirTemplate,
+		NameTemplate:      outputlayout.DefaultNameTemplate,
+		MovieDirTemplate:  outputlayout.DefaultMovieDirTemplate,
+		MovieNameTemplate: outputlayout.DefaultMovieNameTemplate,
+
 		Quality:       "1080p",
 		Container:     "mkv",
 		Concurrency:   2,
@@ -96,6 +111,20 @@ func (s *settingsStore) load() {
 	if loaded.OutputPath != "" {
 		merged.OutputPath = loaded.OutputPath
 	}
+	// An empty template means "never set" (or a config file written before
+	// templates existed), so the default stands.
+	if loaded.DirTemplate != "" {
+		merged.DirTemplate = loaded.DirTemplate
+	}
+	if loaded.NameTemplate != "" {
+		merged.NameTemplate = loaded.NameTemplate
+	}
+	if loaded.MovieDirTemplate != "" {
+		merged.MovieDirTemplate = loaded.MovieDirTemplate
+	}
+	if loaded.MovieNameTemplate != "" {
+		merged.MovieNameTemplate = loaded.MovieNameTemplate
+	}
 	if loaded.Quality != "" {
 		merged.Quality = loaded.Quality
 	}
@@ -138,6 +167,27 @@ func (s *settingsStore) save(in Settings) (Settings, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// Validate / clamp.
+	// A bad template is rejected outright rather than silently reset: the user
+	// would otherwise only discover the typo by finding files in the wrong place.
+	tmpls := []struct {
+		field *string
+		def   string
+		label string
+	}{
+		{&in.DirTemplate, outputlayout.DefaultDirTemplate, "series folder template"},
+		{&in.NameTemplate, outputlayout.DefaultNameTemplate, "series file-name template"},
+		{&in.MovieDirTemplate, outputlayout.DefaultMovieDirTemplate, "movie folder template"},
+		{&in.MovieNameTemplate, outputlayout.DefaultMovieNameTemplate, "movie file-name template"},
+	}
+	for _, t := range tmpls {
+		*t.field = strings.TrimSpace(*t.field)
+		if *t.field == "" {
+			*t.field = t.def
+		}
+		if err := outputlayout.ValidateTemplate(*t.field); err != nil {
+			return s.cur, fmt.Errorf("%s: %w", t.label, err)
+		}
+	}
 	if in.Concurrency < 1 {
 		in.Concurrency = 1
 	}
@@ -182,8 +232,12 @@ type AudioSpecDTO struct {
 
 // RunRequest is the JSON body the UI sends to start a download or run a preview.
 type RunRequest struct {
-	URL           string `json:"url"`
-	OutputPath    string `json:"outputPath"`
+	URL        string `json:"url"`
+	OutputPath string `json:"outputPath"`
+	// DirTemplate / NameTemplate override the saved defaults for this one
+	// download; empty falls back to the built-in default layout.
+	DirTemplate   string `json:"dirTemplate"`
+	NameTemplate  string `json:"nameTemplate"`
 	Quality       string `json:"quality"`
 	Container     string `json:"container"`
 	Concurrency   int    `json:"concurrency"`
@@ -261,9 +315,26 @@ func buildRunConfig(req RunRequest) (domain.RunConfig, error) {
 		extraFFmpeg = splitShellArgs(req.FFmpegArgs)
 	}
 
+	dirTmpl := strings.TrimSpace(req.DirTemplate)
+	nameTmpl := strings.TrimSpace(req.NameTemplate)
+	if dirTmpl == "" {
+		dirTmpl = outputlayout.DefaultDirTemplate
+	}
+	if nameTmpl == "" {
+		nameTmpl = outputlayout.DefaultNameTemplate
+	}
+	if err := outputlayout.ValidateTemplate(dirTmpl); err != nil {
+		return domain.RunConfig{}, fmt.Errorf("folder template: %w", err)
+	}
+	if err := outputlayout.ValidateTemplate(nameTmpl); err != nil {
+		return domain.RunConfig{}, fmt.Errorf("file-name template: %w", err)
+	}
+
 	cfg := domain.RunConfig{
 		InputURL:         req.URL,
 		OutputPath:       req.OutputPath,
+		DirTemplate:      dirTmpl,
+		NameTemplate:     nameTmpl,
 		MaxConcurrency:   req.Concurrency,
 		MaxRetries:       req.Retries,
 		MinIntervalMS:    req.MinIntervalMS,

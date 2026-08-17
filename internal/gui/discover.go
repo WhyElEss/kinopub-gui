@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ZioSHik/kinopub-gui/internal/domain"
 	"github.com/ZioSHik/kinopub-gui/internal/services/kinopubapi"
 )
 
@@ -18,10 +19,14 @@ import (
 
 // DiscoverItem is a catalog card.
 type DiscoverItem struct {
-	ID              string   `json:"id"`
-	Type            string   `json:"type"`
+	ID   string `json:"id"`
+	Type string `json:"type"`
+	// Title / OriginalTitle are the split halves shown on the card; FullTitle is
+	// the raw kino.pub title the download's {title} token expands to, so the UI
+	// can preview the real output path.
 	Title           string   `json:"title"`
 	OriginalTitle   string   `json:"originalTitle,omitempty"`
+	FullTitle       string   `json:"fullTitle,omitempty"`
 	Year            int      `json:"year"`
 	Poster          string   `json:"poster"`
 	Director        string   `json:"director,omitempty"`
@@ -36,13 +41,10 @@ type DiscoverItem struct {
 	Episode         int      `json:"episode,omitempty"`   // history last-watched episode
 }
 
-// splitTitle separates a kino.pub combined "Русское / Original" title.
-func splitTitle(s string) (title, original string) {
-	if i := strings.Index(s, " / "); i > 0 {
-		return strings.TrimSpace(s[:i]), strings.TrimSpace(s[i+3:])
-	}
-	return s, ""
-}
+// splitTitle separates a kino.pub combined "Русское / Original" title. The
+// download side splits the same title for its {ru} / {original} path tokens, so
+// both go through one implementation.
+func splitTitle(s string) (title, original string) { return domain.SplitTitle(s) }
 
 // DiscoverPage is a paginated list of items.
 type DiscoverPage struct {
@@ -146,6 +148,7 @@ func toDiscoverItem(it kinopubapi.Item) DiscoverItem {
 		Type:            it.Type,
 		Title:           title,
 		OriginalTitle:   original,
+		FullTitle:       it.Title,
 		Year:            it.Year,
 		Poster:          it.Posters.Best(),
 		Director:        it.Director,

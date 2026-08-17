@@ -1088,11 +1088,7 @@ func (e *engine) resolveAudioPreference(
 
 // buildSeriesFromPlaylist constructs a domain.Series from page playlist data.
 func (e *engine) buildSeriesFromPlaylist(playlist *domain.PagePlaylist, cfg domain.RunConfig) domain.Series {
-	series := domain.Series{
-		ID:        domain.SeriesID(fmt.Sprintf("%d", playlist.ItemID)),
-		Title:     playlist.Title,
-		PosterURL: playlist.Poster,
-	}
+	series := domain.SeriesFromPlaylist(playlist)
 
 	// Group episodes by season.
 	seasonMap := make(map[int][]domain.Episode)
@@ -1225,10 +1221,16 @@ func (d *downloadExecutor) Execute(ctx context.Context, job domain.Job) error {
 	return d.downloader.Download(ctx, job, d.reporter)
 }
 
-// seriesDirPath computes the series download directory path using the same
-// sanitization logic as OutputLayout. This is used to place the state file
-// inside the series folder.
+// seriesDirPath computes the series download directory path — where the state
+// file and the poster live. It asks the OutputLayout so the folder always
+// matches the configured path template; layouts that predate templates (and
+// test doubles) fall back to the sanitized series title.
 func (e *engine) seriesDirPath(root string, series domain.Series) string {
+	if sd, ok := e.deps.OutputLayout.(interface {
+		SeriesDir(string, domain.Series) string
+	}); ok {
+		return sd.SeriesDir(root, series)
+	}
 	fallback := fmt.Sprintf("series_%s", string(series.ID))
 	seriesDir := fsutil.SanitizeComponent(series.Title, fallback)
 	return filepath.Join(root, seriesDir)

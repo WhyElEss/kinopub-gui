@@ -56,7 +56,7 @@ func buildEngineDeps(
 	}
 	httpClient := httpx.WithAuth(proxyProv.HTTPClient(), auth)
 
-	layout := outputlayout.New(cfg.Container)
+	layout := outputlayout.NewWithTemplates(cfg.Container, cfg.DirTemplate, cfg.NameTemplate)
 
 	outputDir := cfg.OutputPath
 	if outputDir == "" {

@@ -7,6 +7,15 @@ import { Field, Spinner, Toggle } from "../components/ui";
 import { DirPicker } from "../components/DirPicker";
 import { InstallFFmpeg } from "../components/InstallFFmpeg";
 import { KinopubLogin } from "../components/KinopubLogin";
+import {
+  DEFAULT_DIR_TEMPLATE,
+  DEFAULT_MOVIE_DIR_TEMPLATE,
+  DEFAULT_MOVIE_NAME_TEMPLATE,
+  DEFAULT_NAME_TEMPLATE,
+  OutputTemplates,
+  SAMPLE_MOVIE,
+  SAMPLE_SERIES,
+} from "../components/OutputTemplates";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -60,8 +69,7 @@ export function SettingsPage() {
     }
   };
 
-  const set = <K extends keyof Settings>(k: K, v: Settings[K]) => {
-    const next = { ...formRef.current, [k]: v };
+  const commit = (next: Settings) => {
     setForm(next);
     dirty.current = true;
     setSaveState("saving");
@@ -69,6 +77,14 @@ export function SettingsPage() {
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => void persist(next, seq), 600);
   };
+
+  const set = <K extends keyof Settings>(k: K, v: Settings[K]) => commit({ ...formRef.current, [k]: v });
+
+  // A template pair changes together (typing in one, or hitting Reset, updates
+  // both), so it has to land in a single commit — two set() calls would both
+  // build on the pre-edit snapshot and the first change would be lost.
+  const setTemplates = (dirKey: keyof Settings, dir: string, nameKey: keyof Settings, name: string) =>
+    commit({ ...formRef.current, [dirKey]: dir, [nameKey]: name });
 
   // Flush a still-pending edit if the user leaves the page before the debounce
   // fires, so nothing is silently dropped.
@@ -100,6 +116,41 @@ export function SettingsPage() {
             <span className="truncate font-mono text-xs">{form.outputPath || t("Choose…")}</span>
           </button>
         </Field>
+
+        <div className="space-y-4 border-t border-white/[0.06] pt-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-200">{t("Default file layout")}</h3>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {t("Folder and file name for every new download. Each download can override them.")}
+            </p>
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">{t("TV series")}</p>
+            <OutputTemplates
+              dirTemplate={form.dirTemplate}
+              nameTemplate={form.nameTemplate}
+              onChange={(dir, name) => setTemplates("dirTemplate", dir, "nameTemplate", name)}
+              outputPath={form.outputPath}
+              values={SAMPLE_SERIES}
+              container={form.container}
+              defaults={{ dir: DEFAULT_DIR_TEMPLATE, name: DEFAULT_NAME_TEMPLATE }}
+            />
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">{t("Films")}</p>
+            <OutputTemplates
+              dirTemplate={form.movieDirTemplate}
+              nameTemplate={form.movieNameTemplate}
+              onChange={(dir, name) => setTemplates("movieDirTemplate", dir, "movieNameTemplate", name)}
+              outputPath={form.outputPath}
+              values={SAMPLE_MOVIE}
+              container={form.container}
+              defaults={{ dir: DEFAULT_MOVIE_DIR_TEMPLATE, name: DEFAULT_MOVIE_NAME_TEMPLATE }}
+            />
+          </div>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t("Default quality")}>

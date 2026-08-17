@@ -16,6 +16,7 @@ import { useI18n, looksLikeTimeout } from "../i18n";
 import { Field, Toggle } from "../components/ui";
 import { SeriesBrowser } from "../components/SeriesBrowser";
 import { DirPicker } from "../components/DirPicker";
+import { OutputTemplates, SAMPLE_MOVIE, SAMPLE_SERIES } from "../components/OutputTemplates";
 import { InstallFFmpeg } from "../components/InstallFFmpeg";
 
 const QUALITIES = [
@@ -34,6 +35,8 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
   const [form, setForm] = useState<RunRequest>(() => ({
     url: "",
     outputPath: settings.outputPath,
+    dirTemplate: settings.dirTemplate,
+    nameTemplate: settings.nameTemplate,
     quality: settings.quality,
     container: settings.container,
     concurrency: settings.concurrency,
@@ -74,6 +77,8 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
     setForm((f) => ({
       ...f,
       outputPath: f.outputPath || settings.outputPath,
+      dirTemplate: f.dirTemplate || settings.dirTemplate,
+      nameTemplate: f.nameTemplate || settings.nameTemplate,
       quality: settings.quality,
       container: settings.container,
       concurrency: settings.concurrency,
@@ -87,6 +92,23 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
 
   const set = <K extends keyof RunRequest>(k: K, v: RunRequest[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  // Which saved default pair the form currently mirrors, so the Series/Movie
+  // buttons show the active one.
+  const isMovieLayout =
+    form.dirTemplate === settings.movieDirTemplate && form.nameTemplate === settings.movieNameTemplate;
+
+  const applyLayout = (kind: "series" | "movie") =>
+    setForm((f) => ({
+      ...f,
+      dirTemplate: kind === "movie" ? settings.movieDirTemplate : settings.dirTemplate,
+      nameTemplate: kind === "movie" ? settings.movieNameTemplate : settings.nameTemplate,
+    }));
+
+  const layoutBtn = (active: boolean) =>
+    active
+      ? "rounded-lg bg-gold-500/15 px-2.5 py-1 font-medium text-gold-300"
+      : "rounded-lg px-2.5 py-1 text-slate-400 hover:text-slate-200";
 
   const toggleEpisode = (key: string) =>
     setSelectedKeys((cur) => {
@@ -237,6 +259,45 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
               <span className="truncate font-mono text-xs">{form.outputPath || t("Choose…")}</span>
             </button>
           </Field>
+        </div>
+
+        <div className="space-y-3 border-t border-white/[0.05] pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-slate-200">{t("Where to save")}</p>
+            {/* A direct link doesn't say whether it's a film or a series until a
+                preview runs, so the layout preset is picked by hand here. */}
+            <div className="flex gap-1 text-xs">
+              <button
+                type="button"
+                className={layoutBtn(!isMovieLayout)}
+                onClick={() => applyLayout("series")}
+              >
+                {t("Serial")}
+              </button>
+              <button
+                type="button"
+                className={layoutBtn(isMovieLayout)}
+                onClick={() => applyLayout("movie")}
+              >
+                {t("Movie")}
+              </button>
+            </div>
+          </div>
+          <OutputTemplates
+            dirTemplate={form.dirTemplate || settings.dirTemplate}
+            nameTemplate={form.nameTemplate || settings.nameTemplate}
+            onChange={(dir, name) =>
+              setForm((f) => ({ ...f, dirTemplate: dir, nameTemplate: name }))
+            }
+            outputPath={form.outputPath}
+            values={isMovieLayout ? SAMPLE_MOVIE : SAMPLE_SERIES}
+            container={form.container}
+            defaults={
+              isMovieLayout
+                ? { dir: settings.movieDirTemplate, name: settings.movieNameTemplate }
+                : { dir: settings.dirTemplate, name: settings.nameTemplate }
+            }
+          />
         </div>
 
         <button

@@ -215,8 +215,13 @@ type PageScraper interface {
 
 // PagePlaylist holds extracted playlist data from a kino.pub page.
 type PagePlaylist struct {
-	ItemID   int
-	Title    string
+	ItemID int
+	Title  string
+	// Subname is the item's original-language title when the API reports one
+	// separately from Title; Year is its release year (0 when unknown). Both feed
+	// the output-path templates ({original}, {year}).
+	Subname  string
+	Year     int
 	Poster   string
 	Type     string   // kino.pub item type: movie, serial, documovie, …
 	Genres   []string // genre titles

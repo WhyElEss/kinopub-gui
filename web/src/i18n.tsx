@@ -427,6 +427,19 @@ const RU: Record<string, string> = {
   "You stopped at {time}": "Вы остановились на {time}",
   "Continue from {time}": "Продолжить с {time}",
   "Start over": "Сначала",
+
+  // Output path templates
+  "Where to save": "Куда сохранить",
+  "Default file layout": "Раскладка файлов по умолчанию",
+  "Folder and file name for every new download. Each download can override them.":
+    "Папка и имя файла для новых загрузок. У каждой загрузки их можно переопределить.",
+  Folder: "Папка",
+  "File name": "Имя файла",
+  "Will be saved as": "Будет сохранено как",
+  Tokens: "Подстановки",
+  Reset: "Сбросить",
+  "TV series": "Сериалы",
+  Films: "Фильмы",
 };
 
 interface I18nValue {

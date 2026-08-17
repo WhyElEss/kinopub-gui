@@ -17,6 +17,12 @@ import {
   type Snapshot,
   type UpdateStatus,
 } from "./api";
+import {
+  DEFAULT_DIR_TEMPLATE,
+  DEFAULT_MOVIE_DIR_TEMPLATE,
+  DEFAULT_MOVIE_NAME_TEMPLATE,
+  DEFAULT_NAME_TEMPLATE,
+} from "./components/OutputTemplates";
 
 export interface Toast {
   id: number;
@@ -51,6 +57,10 @@ const emptyKpAuth: KPStatus = { loggedIn: false, pending: false };
 const emptyFFmpeg: FFmpegStatus = { ffmpegFound: false, ffprobeFound: false };
 const emptySettings: Settings = {
   outputPath: "",
+  dirTemplate: DEFAULT_DIR_TEMPLATE,
+  nameTemplate: DEFAULT_NAME_TEMPLATE,
+  movieDirTemplate: DEFAULT_MOVIE_DIR_TEMPLATE,
+  movieNameTemplate: DEFAULT_MOVIE_NAME_TEMPLATE,
   quality: "1080p",
   container: "mkv",
   concurrency: 2,

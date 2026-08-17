@@ -39,8 +39,14 @@ const (
 
 // RunConfig holds all configuration for a single download run.
 type RunConfig struct {
-	InputURL        string
-	OutputPath      string // "" → cwd (Req 11.1)
+	InputURL   string
+	OutputPath string // "" → cwd (Req 11.1)
+	// DirTemplate names the series folder under OutputPath and NameTemplate the
+	// file inside it (it may contain "/" to nest further, e.g. a season folder).
+	// Both accept tokens like {title} / {year} / {season:02}; empty means the
+	// default layout, <Title>/Season NN/SNNENN. See services/outputlayout.
+	DirTemplate     string
+	NameTemplate    string
 	MaxConcurrency  int    // [1,16], default 2 (Req 4.1, 4.2)
 	MaxRetries      int    // default 5 (Req 5.6)
 	MinIntervalMS   int    // [0,60000] (Req 4.5)

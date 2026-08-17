@@ -7,9 +7,15 @@ type SeriesID string
 
 // Series represents a complete series catalog parsed from a feed.
 type Series struct {
-	ID            SeriesID
-	Title         string
+	ID    SeriesID
+	Title string
+	// RussianTitle and OriginalTitle are the two halves of a combined kino.pub
+	// title (see SplitTitle); OriginalTitle also holds the item's subname when
+	// the API supplies one. Both may be empty — output-path templates fall back
+	// to Title.
+	RussianTitle  string
 	OriginalTitle string
+	Year          int
 	Description   string
 	PosterURL     string
 	Seasons       []Season // ascending by Number (Req 2.4)

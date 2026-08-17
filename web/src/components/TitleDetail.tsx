@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Download,
   Eye,
+  FolderOpen,
   HardDrive,
   Loader2,
   Mic2,
@@ -19,9 +20,11 @@ import {
 } from "../api";
 import { useApp } from "../store";
 import { useI18n } from "../i18n";
-import { Modal, PosterImage } from "./ui";
+import { Field, Modal, PosterImage } from "./ui";
 import { Ratings } from "./Ratings";
 import { Player } from "./Player";
+import { DirPicker } from "./DirPicker";
+import { OutputTemplates, previewPath, type TemplateValues } from "./OutputTemplates";
 
 const QUALITIES = ["", "2160p", "1080p", "720p", "480p", "360p"];
 
@@ -89,6 +92,14 @@ export function TitleDetail({
   const [epSel, setEpSel] = useState<Set<string> | null>(null);
   const [openSeasons, setOpenSeasons] = useState<Set<number>>(new Set());
   const [starting, setStarting] = useState(false);
+  // Destination for this download: folder plus the two path templates, seeded
+  // from the saved defaults (the movie pair for films, the series pair
+  // otherwise) once the detail — and with it the item's type — is known.
+  const [outputPath, setOutputPath] = useState(settings.outputPath);
+  const [dirTmpl, setDirTmpl] = useState(settings.dirTemplate);
+  const [nameTmpl, setNameTmpl] = useState(settings.nameTemplate);
+  const [showDest, setShowDest] = useState(false);
+  const [pickDir, setPickDir] = useState(false);
   // When set, the in-app player is open for this title (a serial episode, or the
   // whole title for a movie when season/episode are undefined).
   const [playing, setPlaying] = useState<{ season?: number; episode?: number } | null>(null);
@@ -108,6 +119,12 @@ export function TitleDetail({
         if (!alive) return;
         setDetail(d);
         setQuality(settings.quality);
+        // A film and a series want different layouts, so which default pair
+        // applies is only known now that the type is loaded.
+        const serial = !!(d.seasons && d.seasons.length);
+        setOutputPath(settings.outputPath);
+        setDirTmpl(serial ? settings.dirTemplate : settings.movieDirTemplate);
+        setNameTmpl(serial ? settings.nameTemplate : settings.movieNameTemplate);
         const keys = (d.seasons || []).flatMap((s) => s.episodes.map((e) => epKey(e.season, e.episode)));
         setEpSel(new Set(keys));
         setOpenSeasons(new Set((d.seasons || []).map((s) => s.number)));
@@ -186,6 +203,26 @@ export function TitleDetail({
   const isSerial = !!detail?.seasons && detail.seasons.length > 0;
   const selectedCount = isSerial ? epSel?.size ?? 0 : 1;
 
+  // Values the path preview substitutes. The first selected episode (or 1×1 for
+  // a film) stands in for the whole set, so the user sees a real file name.
+  const templateValues: TemplateValues = useMemo(() => {
+    const firstKey = [...(epSel ?? [])].sort()[0];
+    const first = (detail?.seasons || [])
+      .flatMap((s) => s.episodes)
+      .find((e) => epKey(e.season, e.episode) === firstKey);
+    return {
+      title: detail?.fullTitle || detail?.title || "",
+      ru: detail?.title || "",
+      original: detail?.originalTitle || "",
+      year: detail?.year || 0,
+      id: detail?.id || "",
+      season: first?.season ?? 1,
+      episode: first?.episode ?? 1,
+      epTitle: first?.title || "",
+      quality: quality || detail?.qualities?.[0] || "1080p",
+    };
+  }, [detail, epSel, quality]);
+
   const start = async () => {
     if (!detail) return;
     if (!ffmpeg.ffmpegFound) {
@@ -227,7 +264,9 @@ export function TitleDetail({
     try {
       await api.startJob({
         url: detail.itemUrl,
-        outputPath: settings.outputPath,
+        outputPath,
+        dirTemplate: dirTmpl,
+        nameTemplate: nameTmpl,
         quality,
         container: settings.container,
         concurrency: settings.concurrency,
@@ -479,6 +518,48 @@ export function TitleDetail({
             </div>
           )}
 
+          {/* Destination: folder + path templates for THIS download */}
+          <div className="space-y-3 border-t border-white/[0.05] pt-4">
+            <button
+              type="button"
+              className="flex items-center gap-2 text-sm font-semibold text-slate-200"
+              onClick={() => setShowDest((v) => !v)}
+            >
+              {showDest ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              {t("Where to save")}
+              {!showDest && (
+                <span className="truncate font-mono text-[11px] font-normal text-slate-500">
+                  {previewPath(outputPath, dirTmpl, nameTmpl, templateValues, settings.container === "mp4" ? "mp4" : "mkv")}
+                </span>
+              )}
+            </button>
+            {showDest && (
+              <div className="space-y-3">
+                <Field label={t("Output folder")}>
+                  <button className="input flex items-center gap-2 text-left" onClick={() => setPickDir(true)} type="button">
+                    <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
+                    <span className="truncate font-mono text-xs">{outputPath || t("Choose…")}</span>
+                  </button>
+                </Field>
+                <OutputTemplates
+                  dirTemplate={dirTmpl}
+                  nameTemplate={nameTmpl}
+                  onChange={(dir, name) => {
+                    setDirTmpl(dir);
+                    setNameTmpl(name);
+                  }}
+                  outputPath={outputPath}
+                  values={templateValues}
+                  container={settings.container}
+                  defaults={{
+                    dir: isSerial ? settings.dirTemplate : settings.movieDirTemplate,
+                    name: isSerial ? settings.nameTemplate : settings.movieNameTemplate,
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Download bar */}
           <div className="flex flex-wrap items-center gap-3 border-t border-white/[0.05] pt-4">
             <select className="input w-auto" value={quality} onChange={(e) => setQuality(e.target.value)}>
@@ -547,6 +628,12 @@ export function TitleDetail({
         onClose={() => setPlaying(null)}
       />
     )}
+    <DirPicker
+      open={pickDir}
+      initial={outputPath}
+      onClose={() => setPickDir(false)}
+      onSelect={(p) => setOutputPath(p)}
+    />
     </>
   );
 }

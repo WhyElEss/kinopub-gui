@@ -38,16 +38,25 @@ func TestIsCompleted(t *testing.T) {
 }
 
 func TestSeriesDirPath(t *testing.T) {
-	got := seriesDirPath("/root", domain.Series{ID: "42", Title: "My Show"})
+	cfg := domain.RunConfig{OutputPath: "/root"}
+	got := seriesDirPath(cfg, domain.Series{ID: "42", Title: "My Show"})
 	want := filepath.Join("/root", "My Show")
 	if got != want {
 		t.Errorf("seriesDirPath = %q, want %q", got, want)
 	}
 	// Empty title falls back to series_<id>.
-	got = seriesDirPath("/root", domain.Series{ID: "42", Title: ""})
+	got = seriesDirPath(cfg, domain.Series{ID: "42", Title: ""})
 	want = filepath.Join("/root", "series_42")
 	if got != want {
 		t.Errorf("seriesDirPath(empty title) = %q, want %q", got, want)
+	}
+	// A custom folder template moves the series directory (and with it the
+	// state file the preview reads) to wherever the download will write.
+	cfg.DirTemplate = "{ru} ({year})"
+	got = seriesDirPath(cfg, domain.Series{ID: "42", Title: "Матрица / The Matrix", RussianTitle: "Матрица", Year: 1999})
+	want = filepath.Join("/root", "Матрица (1999)")
+	if got != want {
+		t.Errorf("seriesDirPath(template) = %q, want %q", got, want)
 	}
 }
 

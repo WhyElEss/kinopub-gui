@@ -3,13 +3,12 @@ package gui
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"sort"
 	"time"
 
 	"github.com/ZioSHik/kinopub-gui/internal/domain"
-	"github.com/ZioSHik/kinopub-gui/internal/lib/fsutil"
 	"github.com/ZioSHik/kinopub-gui/internal/services/kinopubapi"
+	"github.com/ZioSHik/kinopub-gui/internal/services/outputlayout"
 	"github.com/ZioSHik/kinopub-gui/internal/services/statestore"
 )
 
@@ -73,8 +72,10 @@ func (s *Server) preview(ctx context.Context, req RunRequest) (*PreviewResponse,
 	series := seriesFromPlaylist(playlist)
 	source := "api"
 
-	// Load completion state from the series directory.
-	state := loadSeriesState(ctx, cfg.OutputPath, series, logger)
+	// Load completion state from the series directory. It must be resolved with
+	// the same path templates the download will use, or "already downloaded"
+	// marks would be read from a folder the engine never writes to.
+	state := loadSeriesState(ctx, cfg, series, logger)
 
 	resp := &PreviewResponse{
 		SeriesID:      string(series.ID),
@@ -126,9 +127,9 @@ func firstNonEmpty(vals ...string) string {
 
 // loadSeriesState points a fresh state store at the series directory and loads
 // the completion state. Errors are swallowed (treated as "nothing completed").
-func loadSeriesState(ctx context.Context, outputPath string, series domain.Series, logger domain.Logger) domain.DownloadState {
-	store := statestore.New(outputPath, logger)
-	store.SetSeriesDir(seriesDirPath(outputPath, series))
+func loadSeriesState(ctx context.Context, cfg domain.RunConfig, series domain.Series, logger domain.Logger) domain.DownloadState {
+	store := statestore.New(cfg.OutputPath, logger)
+	store.SetSeriesDir(seriesDirPath(cfg, series))
 	state, err := store.Load(ctx, series.ID)
 	if err != nil {
 		return domain.DownloadState{Completed: map[string]domain.CompletedRec{}}
@@ -144,19 +145,17 @@ func isCompleted(state domain.DownloadState, key domain.EpisodeKey) bool {
 	return ok
 }
 
-func seriesDirPath(root string, series domain.Series) string {
-	fallback := fmt.Sprintf("series_%s", string(series.ID))
-	return filepath.Join(root, fsutil.SanitizeComponent(series.Title, fallback))
+// seriesDirPath resolves the series folder exactly as the download engine will,
+// i.e. through the configured path templates.
+func seriesDirPath(cfg domain.RunConfig, series domain.Series) string {
+	layout := outputlayout.NewWithTemplates(cfg.Container, cfg.DirTemplate, cfg.NameTemplate)
+	return layout.SeriesDir(cfg.OutputPath, series)
 }
 
 // seriesFromPlaylist builds a domain.Series from a scraped page playlist
 // (mirrors the engine's buildSeriesFromPlaylist).
 func seriesFromPlaylist(playlist *domain.PagePlaylist) domain.Series {
-	series := domain.Series{
-		ID:        domain.SeriesID(fmt.Sprintf("%d", playlist.ItemID)),
-		Title:     playlist.Title,
-		PosterURL: playlist.Poster,
-	}
+	series := domain.SeriesFromPlaylist(playlist)
 	seasonMap := make(map[int][]domain.Episode)
 	for _, pe := range playlist.Episodes {
 		ep := domain.Episode{

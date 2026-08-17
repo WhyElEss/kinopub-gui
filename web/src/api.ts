@@ -123,6 +123,10 @@ export interface UpdateStatus {
 
 export interface Settings {
   outputPath: string;
+  dirTemplate: string;
+  nameTemplate: string;
+  movieDirTemplate: string;
+  movieNameTemplate: string;
   quality: string;
   container: string;
   concurrency: number;
@@ -178,6 +182,8 @@ export interface DiscoverItem {
   type: string;
   title: string;
   originalTitle?: string;
+  // Raw kino.pub title (both halves) — what the {title} path token expands to.
+  fullTitle?: string;
   year: number;
   poster: string;
   director?: string;
@@ -276,6 +282,9 @@ export interface ItemsQuery {
 export interface RunRequest {
   url: string;
   outputPath: string;
+  // Output-path templates for THIS download; empty falls back to the defaults.
+  dirTemplate?: string;
+  nameTemplate?: string;
   quality: string;
   container: string;
   concurrency: number;
