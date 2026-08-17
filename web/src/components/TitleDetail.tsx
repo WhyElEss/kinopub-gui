@@ -18,6 +18,7 @@ import {
   type DiscoverItem,
   imgURL,
 } from "../api";
+import { buildAudioSpecs } from "../audio";
 import { useApp } from "../store";
 import { useI18n } from "../i18n";
 import { Field, Modal, PosterImage } from "./ui";
@@ -238,23 +239,10 @@ export function TitleDetail({
       toast(t("Select at least one voiceover"), "error");
       return;
     }
-    // When every track is selected, send no filter (keep all). Otherwise build an
-    // exact per-track spec so the chosen variant is matched precisely — separating
-    // a plain dub from its AC3 sibling (same studio name). The discriminator is
-    // the CODEC: tagged codecs (AC3/DTS/…) appear verbatim in the HLS track name,
-    // so the entry REQUIRES that token; a plain (AAC/MP3) entry instead FORBIDS the
-    // tagged tokens so it doesn't also match its AC3 sibling.
-    const taggedCodecs = ["ac3", "eac3", "e-ac3", "dts", "dts-hd", "truehd", "true-hd"];
-    const isTagged = (a: { codec?: string }) => taggedCodecs.includes((a.codec || "").toLowerCase());
-    const allSelected = chosenAudios.length === detail.audios.length;
-    const audioSpecs =
-      allSelected || chosenAudios.length === 0
-        ? undefined
-        : chosenAudios.map((a) => {
-            const require = [a.filter].filter(Boolean);
-            if (isTagged(a) && a.codec) require.push(a.codec);
-            return { require, forbid: isTagged(a) ? [] : taggedCodecs };
-          });
+    // When every track is selected, send no filter (keep all). Otherwise build
+    // exact per-track rules that match the chosen variants and nothing else
+    // (see buildAudioSpecs).
+    const audioSpecs = buildAudioSpecs(detail.audios, chosenAudios);
     // Remember this voiceover choice for the next title/season.
     writeAudioPref(chosenAudios.map((a) => normDub(a.label)));
     const seedTitles = Object.fromEntries(

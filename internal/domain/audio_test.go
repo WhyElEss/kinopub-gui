@@ -252,3 +252,35 @@ func TestAudioPreference_IsAll(t *testing.T) {
 		t.Error("Exclude AudioPreference should not be IsAll")
 	}
 }
+
+// A dub with no studio of its own is described only by its type, and
+// "Многоголосый" is a substring of every other multi-voice dub's name. Picking
+// it must not drag its siblings along — the GUI expresses that by forbidding
+// the studios of the tracks the user left unchecked.
+func TestSelectAudio_SpecsSeparateStudiolessDubFromSiblings(t *testing.T) {
+	tracks := []AudioTrackInfo{
+		{Index: 0, Name: "01. Многоголосый. Первый канал ОРТ (RUS)", Language: "rus"},
+		{Index: 1, Name: "02. Многоголосый. Позитив-Мультимедиа (RUS)", Language: "rus"},
+		{Index: 2, Name: "03. Многоголосый (RUS)", Language: "rus"},
+		{Index: 3, Name: "04. Дубляж. Студия Горького (RUS)", Language: "rus"},
+		{Index: 4, Name: "08. Оригинал (ENG)", Language: "eng"},
+	}
+
+	// The studio-less dub alone.
+	dubOnly := AudioPreference{Specs: []AudioSpec{{
+		Require: []string{"Многоголосый"},
+		Forbid:  []string{"Первый канал ОРТ", "Позитив-Мультимедиа"},
+	}}}
+	if got := SelectAudio(tracks, dubOnly); !reflect.DeepEqual(got, []int{2}) {
+		t.Errorf("studio-less dub spec = %v, want [2]", got)
+	}
+
+	// Plus the original — the pair the reported download was supposed to fetch.
+	withOriginal := AudioPreference{Specs: []AudioSpec{
+		{Require: []string{"Многоголосый"}, Forbid: []string{"Первый канал ОРТ", "Позитив-Мультимедиа"}},
+		{Require: []string{"Оригинал"}},
+	}}
+	if got := SelectAudio(tracks, withOriginal); !reflect.DeepEqual(got, []int{2, 4}) {
+		t.Errorf("dub+original spec = %v, want [2 4]", got)
+	}
+}
