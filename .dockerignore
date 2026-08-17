@@ -1,0 +1,10 @@
+.git
+.github
+web/node_modules
+web/.vite
+dist-app
+*.tar.gz
+*.zip
+kinopub-gui
+kinopub-gui-*
+.DS_Store

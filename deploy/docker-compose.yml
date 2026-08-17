@@ -1,0 +1,43 @@
+# kinopub-gui on a home server (tested on a Raspberry Pi 4, Debian 12 arm64).
+#
+#   docker compose up -d --build
+#
+# Then open http://<server-ip>:8765 from any machine on the LAN.
+#
+# There is NO login in this app: anyone who can reach port 8765 can browse the
+# mounted filesystem, start downloads and use the signed-in kino.pub account.
+# Keep it on the LAN — do not port-forward it.
+
+services:
+  kinopub-gui:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        # Shown in the UI; the in-app updater is disabled in this build.
+        VERSION: nas
+    image: kinopub-gui:nas
+    container_name: kinopub-gui
+    restart: unless-stopped
+
+    # Files are written as this user, so they land in the media library owned by
+    # the host account rather than by root.
+    user: "1000:1000"
+
+    ports:
+      - "8765:8765"
+
+    environment:
+      - TZ=America/Toronto
+
+    volumes:
+      # Settings + encrypted kino.pub credentials.
+      - ./config:/config
+      # The media library the downloads go into. The folder picker in the UI
+      # browses the container's filesystem, so what is mounted here is exactly
+      # what can be chosen as an output folder.
+      - /mnt/share/Media:/media
+      # The credential file is encrypted with a key derived from /etc/machine-id.
+      # Without this mount the container falls back to the host's boot id, which
+      # changes on every reboot — and the saved login would be lost each time.
+      - /etc/machine-id:/etc/machine-id:ro
