@@ -52,11 +52,18 @@ type Settings struct {
 	MaxActiveJobs int `json:"maxActiveJobs"`
 }
 
+// outputDirEnv seeds the default output folder on a machine where the home
+// directory is meaningless — a container, where "$HOME/Downloads/kinopub" would
+// point at a path nobody mounted. Only the default: once the user picks a folder
+// it is stored in gui.json and the variable is ignored.
+const outputDirEnv = "KINOPUB_OUTPUT_DIR"
+
 func defaultSettings() Settings {
-	home, _ := os.UserHomeDir()
-	out := ""
-	if home != "" {
-		out = filepath.Join(home, "Downloads", "kinopub")
+	out := os.Getenv(outputDirEnv)
+	if out == "" {
+		if home, _ := os.UserHomeDir(); home != "" {
+			out = filepath.Join(home, "Downloads", "kinopub")
+		}
 	}
 	return Settings{
 		OutputPath:        out,

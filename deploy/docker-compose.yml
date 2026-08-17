@@ -29,10 +29,16 @@ services:
 
     environment:
       - TZ=America/Toronto
+      # First-run default for the output folder — inside the container, so it
+      # names the mount below rather than a home directory that isn't mounted.
+      - KINOPUB_OUTPUT_DIR=/media
 
     volumes:
-      # Settings + encrypted kino.pub credentials.
-      - ./config:/config
+      # Settings + encrypted kino.pub credentials. A named volume rather than a
+      # path inside the repo: a checkout or an rsync of the sources must never be
+      # able to wipe the saved login. Read it with
+      #   docker run --rm -v kinopub-config:/c alpine cat /c/kinopub/gui.json
+      - kinopub-config:/config
       # The media library the downloads go into. The folder picker in the UI
       # browses the container's filesystem, so what is mounted here is exactly
       # what can be chosen as an output folder.
@@ -41,3 +47,6 @@ services:
       # Without this mount the container falls back to the host's boot id, which
       # changes on every reboot — and the saved login would be lost each time.
       - /etc/machine-id:/etc/machine-id:ro
+
+volumes:
+  kinopub-config:

@@ -32,7 +32,11 @@ RUN apk add --no-cache ffmpeg ca-certificates tzdata
 COPY --from=build /out/kinopub-gui /usr/local/bin/kinopub-gui
 
 # Settings and the encrypted credentials live here (XDG_CONFIG_HOME/kinopub).
+# The directory is created owned by 1000:1000 on purpose: Docker copies the
+# image's ownership into a fresh named volume, so the container can write there
+# when it runs as that user (see docker-compose.yml).
 ENV XDG_CONFIG_HOME=/config
+RUN mkdir -p /config && chown 1000:1000 /config
 VOLUME ["/config"]
 EXPOSE 8765
 
