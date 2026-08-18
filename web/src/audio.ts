@@ -45,6 +45,13 @@ export function buildAudioSpecs(
 
   return chosen.map((a) => {
     const require = [a.filter].filter(Boolean);
+    // The language is part of the identity, not decoration. A title can ship
+    // "Дубляж" in two languages, and the manifest may hold dubs the catalog
+    // never listed — a German one, say — which a rule requiring only "Дубляж"
+    // would happily match too. The server's matcher understands a language
+    // token (it compares canonical languages as well as the name), so adding it
+    // pins the rule to the one the user actually picked.
+    if (a.lang) require.push(a.lang);
     // A tagged track requires its codec; an untagged one forbids every tagged
     // codec so it doesn't also match its own surround sibling.
     if (isTagged(a) && a.codec) require.push(a.codec);

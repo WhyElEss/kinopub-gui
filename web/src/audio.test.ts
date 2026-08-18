@@ -48,6 +48,24 @@ function selected(all: ReturnType<typeof track>[], specs: AudioSpec[] | undefine
 }
 
 describe("buildAudioSpecs", () => {
+  // Reported from a real download: the catalog listed one "Дубляж", the
+  // manifest held a second one in German, and picking the Russian dub pulled
+  // both in. The rule has to carry the language.
+  it("does not match a same-named dub in another language", () => {
+    const listed = [
+      track(1, "Дубляж", "", "rus"),
+      track(2, "Многоголосый", "", "rus"),
+      track(3, "Оригинал", "", "fre"),
+    ];
+    const specs = buildAudioSpecs(listed, [listed[0]])!;
+    // A track the catalog never listed, but the manifest does.
+    const germanDub = track(4, "Дубляж", "", "ger");
+    const matchesGerman = specs.some((sp) => matches(germanDub.hlsName, germanDub.lang, sp));
+    const matchesRussian = specs.some((sp) => matches(listed[0].hlsName, listed[0].lang, sp));
+    expect(matchesRussian).toBe(true);
+    expect(matchesGerman).toBe(false);
+  });
+
   // The reported bug: picking the studio-less "Многоголосый" dub also pulled in
   // every other multi-voice dub, because its filter is a substring of theirs.
   const film = [

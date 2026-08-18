@@ -197,6 +197,12 @@ func audioLabel(a kinopubapi.Audio) (label, filter string) {
 		} else {
 			label = fmt.Sprintf("Дорожка %d", a.Index)
 		}
+	} else if a.Lang != "" {
+		// The language belongs in the label, not just in the data: a title can
+		// carry "Дубляж" in two languages, and without the tag they render
+		// identically — the second one was then dropped by the dedupe below
+		// while still being downloaded, because the selection matched both.
+		label += " · " + strings.ToUpper(a.Lang)
 	}
 	// Tag surround/codec variants so the plain stereo dub and its AC3/5.1 sibling
 	// are distinct picker entries (and distinct dedupe keys) rather than collapsed.
