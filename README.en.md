@@ -33,6 +33,7 @@ You sign in once, with a short device code. Nothing heavy under it — a single 
 - 📚 **Library** — browse what you've already downloaded, with sizes, resolutions and missing-file detection; open a finished file or reveal its folder.
 - 🔐 **Sign in once** — a short device-code login; tokens are stored encrypted and machine-bound. Local features (Library, Doctor, Settings) work without signing in.
 - 🌍 **Bilingual** — English & Russian, switchable in one click (remembered between sessions).
+- 🌗 **Day and night** — the interface follows the device's system theme or is pinned by hand; the choice is shared across devices.
 - 📦 **Single binary** — the UI is embedded, with no Electron or Node at runtime; or run it in Docker on a home server.
 
 ## Screenshots
@@ -214,7 +215,17 @@ Names inside the work folder are deterministic (the output's file name plus a ha
 
 Leftovers from a hard crash are handled by the **Doctor**: it reports how many items the work folder holds and how much space they take, and removes them when "Clean .tmp" is ticked. While any download is active — **including a paused one** — the folder is left completely alone and the Doctor says so: those files are exactly what a paused download resumes from.
 
-### 9. Settings
+### 9. Appearance
+
+Next to the language switcher in the header sit three buttons: **Auto · Day · Night**.
+
+"Auto" is the default: the interface follows the system theme of whatever device it is opened from (`prefers-color-scheme`), so it darkens in the evening along with macOS or a phone. Day and Night pin the theme regardless of the system.
+
+The choice is stored in the settings **on the server**, so it is the same on every device you open the app from; the last value is also cached in the browser and applied before the first paint, so a reload never flashes the wrong theme.
+
+Both themes are built on CSS variables: components carry no per-theme colour duplicates, and switching is a swap of one variable set. The dark theme keeps exactly the values it always had.
+
+### 10. Settings
 
 Defaults for new downloads (output folders and path templates — separately for series and films, quality, container, concurrency, retries, throttle, proxy) plus extra folders to scan in the Library, the kino.pub sign-in, the ffmpeg installer and the software updater. Stored at `~/.config/kinopub/gui.json` (or `$XDG_CONFIG_HOME/kinopub/gui.json`).
 

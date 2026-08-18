@@ -85,7 +85,9 @@ func defaultSettings() Settings {
 		Concurrency:   2,
 		Retries:       5,
 		Verbosity:     "normal",
-		Theme:         "cinematic",
+		// auto = follow the viewer's system setting; the UI also accepts
+		// "light"/"dark" and treats anything else as auto.
+		Theme:         "auto",
 		LibraryDirs:   nil,
 		MaxActiveJobs: 0, // unlimited by default — no behavior change until set
 	}

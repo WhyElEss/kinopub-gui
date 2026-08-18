@@ -39,7 +39,8 @@ func TestDefaultSettings(t *testing.T) {
 	if s.Quality != "1080p" || s.Container != "mkv" || s.Concurrency != 2 || s.Retries != 5 {
 		t.Errorf("unexpected defaults: %+v", s)
 	}
-	if s.Verbosity != "normal" || s.Theme != "cinematic" {
+	// "auto" means the UI follows the viewer's system light/dark setting.
+	if s.Verbosity != "normal" || s.Theme != "auto" {
 		t.Errorf("unexpected defaults: %+v", s)
 	}
 	if s.MaxActiveJobs != 0 {
