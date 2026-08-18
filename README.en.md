@@ -225,6 +225,10 @@ The choice is stored in the settings **on the server**, so it is the same on eve
 
 Both themes are built on CSS variables: components carry no per-theme colour duplicates, and switching is a swap of one variable set. The dark theme keeps exactly the values it always had.
 
+<p align="center">
+  <img src="docs/screenshots/catalog-light.png" alt="Catalog in the day theme" width="900">
+</p>
+
 ### 10. Settings
 
 Defaults for new downloads (output folders and path templates — separately for series and films, quality, container, concurrency, retries, throttle, proxy) plus extra folders to scan in the Library, the kino.pub sign-in, the ffmpeg installer and the software updater. Stored at `~/.config/kinopub/gui.json` (or `$XDG_CONFIG_HOME/kinopub/gui.json`).
