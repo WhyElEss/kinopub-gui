@@ -183,11 +183,32 @@ type Job struct {
 	// episode. Consumed (cleared) at the start of each run. Guarded by mu.
 	retryOnly []domain.EpisodeKey
 
+	// followDefaults marks a job whose tuning values (episodes at once, retries,
+	// throttle, proxy) were taken straight from the settings rather than typed
+	// into Advanced options. Those jobs re-read the settings when they start, so
+	// a change made while they sat in the queue actually reaches them. Set once
+	// at creation, read at dispatch.
+	followDefaults bool
+
 	cancel          context.CancelFunc
 	cancelRequested bool            // set if canceled before its engine started
 	urgent          bool            // scheduler: may bypass maxActive (guarded by JobManager.mu)
 	done            <-chan struct{} // closed when the job's context is canceled/finished
 	dirty           bool            // pending broadcast
+}
+
+// withTuning returns cfg with the four settings that describe HOW a download
+// runs replaced by the current defaults. Everything that decides WHAT the
+// download produces — quality, container, folders, templates, the episode
+// selection — is deliberately left alone: those are chosen per download, and
+// changing them behind a job's back would break resuming it and orphan the
+// partial data already on disk.
+func withTuning(cfg domain.RunConfig, concurrency, retries, minIntervalMS int, proxy string) domain.RunConfig {
+	cfg.MaxConcurrency = concurrency
+	cfg.MaxRetries = retries
+	cfg.MinIntervalMS = minIntervalMS
+	cfg.ProxyURL = proxy
+	return cfg
 }
 
 func newJob(id, url string, cfg domain.RunConfig) *Job {

@@ -246,6 +246,12 @@ export function SettingsPage() {
           </Field>
         </div>
 
+        <p className="text-xs text-slate-500">
+          {t(
+            "Quality, container and folders are fixed when a download is queued. Episodes at once, retries, throttle and proxy are re-read when it starts, so a change reaches downloads already waiting.",
+          )}
+        </p>
+
         <Toggle label={t("No chunked download by default")} hint={t("Stream everything through ffmpeg")} checked={form.noChunked} onChange={(v) => set("noChunked", v)} />
       </div>
 

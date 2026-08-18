@@ -97,7 +97,20 @@ func NewServer(version string, static fs.FS) *Server {
 	// lock the account out).
 	s.mgr.startFn = func(j *Job) {
 		apiClient, _ := s.kpClient()
-		go s.mgr.run(context.Background(), j, j.cfg, j.seedTitles, j.title, j.posterURL, apiClient)
+		// A job can sit in the queue — or on pause — for hours after the settings
+		// that describe how it should run were changed. Re-read them here, at the
+		// moment it actually starts, unless this job carries values typed into
+		// Advanced options for itself.
+		cfg := j.cfg
+		if j.followDefaults {
+			cur := s.settings.get()
+			cfg = withTuning(cfg, cur.Concurrency, cur.Retries, cur.MinIntervalMS, cur.Proxy)
+			j.mu.Lock()
+			j.cfg = cfg
+			j.mu.Unlock()
+			s.mgr.markPersistDirty()
+		}
+		go s.mgr.run(context.Background(), j, cfg, j.seedTitles, j.title, j.posterURL, apiClient)
 	}
 	s.mgr.setMaxActive(s.settings.get().MaxActiveJobs)
 	// Restore the persisted queue: downloads interrupted by a restart come back
@@ -550,7 +563,14 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	job := s.launchJob(cfg, req.SeedTitle, req.SeedPoster, req.SeedTitles, false)
+	// Whether the tuning values are the saved defaults or something the user
+	// typed for this one download. Only the former follow later changes; an
+	// explicit choice in Advanced options is not overwritten behind their back.
+	cur := s.settings.get()
+	followDefaults := req.Concurrency == cur.Concurrency && req.Retries == cur.Retries &&
+		req.MinIntervalMS == cur.MinIntervalMS && strings.TrimSpace(req.Proxy) == strings.TrimSpace(cur.Proxy)
+
+	job := s.launchJob(cfg, req.SeedTitle, req.SeedPoster, req.SeedTitles, false, followDefaults)
 	writeJSON(w, http.StatusAccepted, job.snapshot())
 }
 
@@ -558,8 +578,9 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 // it, and submits it to the scheduler. Shared by create and retry. Callers must
 // validate cfg.InputURL and ffmpeg availability before calling. front=true puts
 // the job at the head of the wait queue (per-episode retries jump the line).
-func (s *Server) launchJob(cfg domain.RunConfig, title, poster string, seedTitles map[string]string, front bool) *Job {
+func (s *Server) launchJob(cfg domain.RunConfig, title, poster string, seedTitles map[string]string, front, followDefaults bool) *Job {
 	job := newJob(s.mgr.nextID(), cfg.InputURL, cfg)
+	job.followDefaults = followDefaults
 	if title != "" {
 		job.title = title
 	}

@@ -31,6 +31,9 @@ type persistedJob struct {
 	Titles     map[string]string `json:"titles,omitempty"`
 	SeedTitles map[string]string `json:"seedTitles,omitempty"`
 	Cfg        domain.RunConfig  `json:"cfg"`
+	// FollowDefaults survives a restart: without it, a restored queue would stop
+	// picking up settings changes for no visible reason.
+	FollowDefaults bool `json:"followDefaults,omitempty"`
 }
 
 // jobStore persists the job queue as JSON in the config dir, so unfinished
@@ -114,7 +117,8 @@ func persistedFrom(j *Job) persistedJob {
 		Summary:    j.summary,
 		Titles:     titles,
 		SeedTitles: j.seedTitles,
-		Cfg:        j.cfg,
+		Cfg:            j.cfg,
+		FollowDefaults: j.followDefaults,
 	}
 }
 
@@ -142,6 +146,7 @@ func restoreJob(p persistedJob) *Job {
 	j.plan = p.Plan
 	j.summary = p.Summary
 	j.seedTitles = p.SeedTitles
+	j.followDefaults = p.FollowDefaults
 	for k, v := range p.Titles {
 		j.titles[k] = v
 	}

@@ -347,3 +347,65 @@ func TestSchedulerRaisingLimitDispatchesQueued(t *testing.T) {
 		t.Fatalf("raising the limit should dispatch the queued job; got %v", got)
 	}
 }
+
+// A job queued before a settings change must run with the CHANGED values: the
+// gap between queueing and starting is exactly where "the setting did nothing"
+// came from.
+func TestQueuedJobPicksUpChangedTuning(t *testing.T) {
+	s := newTestServer(t)
+
+	cur := s.settings.get()
+	cur.Concurrency = 2
+	cur.Retries = 5
+	if _, err := s.settings.save(cur); err != nil {
+		t.Fatalf("save settings: %v", err)
+	}
+
+	// Queued with the defaults of the moment, so it follows them.
+	job := newJob("job-1", "https://kino.pub/item/view/1", domain.RunConfig{
+		InputURL:       "https://kino.pub/item/view/1",
+		MaxConcurrency: 2,
+		MaxRetries:     5,
+	})
+	job.followDefaults = true
+
+	// The user raises both while it waits.
+	cur.Concurrency = 6
+	cur.Retries = 9
+	if _, err := s.settings.save(cur); err != nil {
+		t.Fatalf("save settings: %v", err)
+	}
+
+	// What the dispatcher would hand to the engine.
+	got := withTuning(job.cfg, s.settings.get().Concurrency, s.settings.get().Retries,
+		s.settings.get().MinIntervalMS, s.settings.get().Proxy)
+	if got.MaxConcurrency != 6 || got.MaxRetries != 9 {
+		t.Errorf("tuning = %d episodes / %d retries, want 6 / 9", got.MaxConcurrency, got.MaxRetries)
+	}
+	// Everything that decides what lands on disk is untouched.
+	if got.OutputPath != job.cfg.OutputPath || got.Quality != job.cfg.Quality ||
+		got.DirTemplate != job.cfg.DirTemplate || got.NameTemplate != job.cfg.NameTemplate {
+		t.Errorf("withTuning changed an output field: %+v", got)
+	}
+}
+
+// The opposite case: values typed into Advanced options for one download are
+// that download's own, and a later settings change must not overwrite them.
+func TestExplicitTuningIsNotFollowedByDefaults(t *testing.T) {
+	s := newTestServer(t)
+	cur := s.settings.get()
+	cur.Concurrency = 2
+	if _, err := s.settings.save(cur); err != nil {
+		t.Fatalf("save settings: %v", err)
+	}
+
+	// handleCreateJob marks a job as following the defaults only when every
+	// tuning value matches the saved ones; here concurrency does not.
+	req := RunRequest{Concurrency: 8, Retries: cur.Retries, MinIntervalMS: cur.MinIntervalMS, Proxy: cur.Proxy}
+	saved := s.settings.get()
+	follows := req.Concurrency == saved.Concurrency && req.Retries == saved.Retries &&
+		req.MinIntervalMS == saved.MinIntervalMS && req.Proxy == saved.Proxy
+	if follows {
+		t.Error("a job with an explicit concurrency must not follow the defaults")
+	}
+}

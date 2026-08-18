@@ -75,6 +75,8 @@ const RU: Record<string, string> = {
   "Min interval (ms)": "Мин. интервал (мс)",
   "throttle requests (0–60000)": "ограничение запросов (0–60000)",
   "Downloads at once": "Загрузок одновременно",
+  "Quality, container and folders are fixed when a download is queued. Episodes at once, retries, throttle and proxy are re-read when it starts, so a change reaches downloads already waiting.":
+    "Качество, контейнер и папки фиксируются в момент постановки загрузки. Серий одновременно, повторы, интервал и прокси перечитываются при старте — поэтому изменение доходит и до тех, что уже стоят в очереди.",
   "0 = no limit. When set, extra downloads wait in a queue you can reorder.":
     "0 = без лимита. Лишние загрузки ждут в очереди, её можно менять местами.",
   Proxy: "Прокси",
