@@ -3,8 +3,206 @@
 @tailwind utilities;
 
 @layer base {
+  /* ---------------------------------------------------------------------
+     Themes.
+
+     Every colour in tailwind.config.js reads one of these variables, so a
+     theme is nothing but a different set of triplets — components never carry
+     dark:/light: variants. Two rules make that work:
+
+       · "hairline" is the base of border-white/[0.06] and the bg-white/[0.0x]
+         washes. It is white on dark and near-black on light, so those ~95
+         utilities keep meaning "a faint line/wash over the surface" in both.
+       · The slate scale is TEXT. On light it is inverted (slate-100 is the
+         strongest ink, slate-600 the faintest), because the components use
+         slate-100 for "loudest" and slate-600 for "quietest" — the meaning is
+         the ladder, not the lightness.
+
+     Dark keeps the exact values the app shipped with, so the dark theme is
+     unchanged to the pixel.
+     --------------------------------------------------------------------- */
   :root {
     color-scheme: dark;
+
+    --c-ink-950: 7 7 11;
+    --c-ink-900: 11 11 18;
+    --c-ink-850: 16 16 25;
+    --c-ink-800: 21 21 31;
+    --c-ink-750: 26 26 38;
+    --c-ink-700: 34 34 47;
+    --c-ink-600: 44 44 59;
+    --c-ink-500: 58 58 77;
+
+    --c-slate-100: 241 245 249;
+    --c-slate-200: 226 232 240;
+    --c-slate-300: 203 213 225;
+    --c-slate-400: 148 163 184;
+    --c-slate-500: 100 116 139;
+    --c-slate-600: 71 85 105;
+
+    --c-gold-200: 253 233 168;
+    --c-gold-300: 252 211 77;
+    --c-gold-400: 251 191 36;
+    --c-gold-500: 245 158 11;
+    --c-gold-600: 217 119 6;
+
+    --c-ember-200: 254 205 211;
+    --c-ember-300: 253 164 175;
+    --c-ember-400: 251 113 133;
+    --c-ember-500: 244 63 94;
+
+    --c-emerald-100: 209 250 229;
+    --c-emerald-300: 110 231 183;
+    --c-emerald-400: 52 211 153;
+    --c-emerald-500: 16 185 129;
+    --c-emerald-600: 5 150 105;
+
+    --c-amber-300: 252 211 77;
+    --c-amber-400: 251 191 36;
+    --c-amber-500: 245 158 11;
+
+    --c-sky-300: 125 211 252;
+    --c-sky-400: 56 189 248;
+    --c-sky-500: 14 165 233;
+    --c-sky-600: 2 132 199;
+
+    --c-rose-100: 255 228 230;
+
+    --c-hairline: 255 255 255;
+
+    --shadow-glow: rgba(245, 158, 11, 0.35);
+    --shadow-inset: rgba(255, 255, 255, 0.03);
+    --shadow-card: rgba(0, 0, 0, 0.8);
+
+    --page-glow-a: rgba(245, 158, 11, 0.1);
+    --page-glow-b: rgba(244, 63, 94, 0.07);
+    --selection: rgba(245, 158, 11, 0.3);
+    --scrollbar: #26262f;
+    --scrollbar-hover: #34344a;
+  }
+
+  /* Light values live in one mixin-ish block applied from two selectors: the
+     system preference (unless the user pinned dark) and an explicit choice. */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+
+      --c-ink-950: 246 246 244;
+      --c-ink-900: 255 255 255;
+      --c-ink-850: 255 255 255;
+      --c-ink-800: 255 255 255;
+      --c-ink-750: 240 240 237;
+      --c-ink-700: 228 228 224;
+      --c-ink-600: 213 213 208;
+      --c-ink-500: 185 185 178;
+
+      --c-slate-100: 20 22 26;
+      --c-slate-200: 35 38 44;
+      --c-slate-300: 60 64 72;
+      --c-slate-400: 90 95 105;
+      --c-slate-500: 118 124 134;
+      --c-slate-600: 150 155 164;
+
+      --c-gold-200: 124 74 3;
+      --c-gold-300: 138 83 3;
+      --c-gold-400: 161 98 7;
+      --c-gold-500: 180 83 9;
+      --c-gold-600: 146 64 14;
+
+      --c-ember-200: 140 26 41;
+      --c-ember-300: 168 31 48;
+      --c-ember-400: 198 42 61;
+      --c-ember-500: 217 45 67;
+
+      --c-emerald-100: 10 92 51;
+      --c-emerald-300: 15 122 65;
+      --c-emerald-400: 13 122 63;
+      --c-emerald-500: 11 122 63;
+      --c-emerald-600: 10 107 55;
+
+      --c-amber-300: 138 90 3;
+      --c-amber-400: 154 103 0;
+      --c-amber-500: 180 83 9;
+
+      --c-sky-300: 11 111 168;
+      --c-sky-400: 12 127 191;
+      --c-sky-500: 2 132 199;
+      --c-sky-600: 3 105 161;
+
+      --c-rose-100: 136 19 55;
+
+      --c-hairline: 17 20 26;
+
+      --shadow-glow: rgba(180, 83, 9, 0.25);
+      --shadow-inset: rgba(255, 255, 255, 0.9);
+      --shadow-card: rgba(23, 25, 35, 0.18);
+
+      --page-glow-a: rgba(245, 158, 11, 0.13);
+      --page-glow-b: rgba(244, 63, 94, 0.08);
+      --selection: rgba(180, 83, 9, 0.22);
+      --scrollbar: #c9c9c2;
+      --scrollbar-hover: #ababa2;
+    }
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+
+    --c-ink-950: 246 246 244;
+    --c-ink-900: 255 255 255;
+    --c-ink-850: 255 255 255;
+    --c-ink-800: 255 255 255;
+    --c-ink-750: 240 240 237;
+    --c-ink-700: 228 228 224;
+    --c-ink-600: 213 213 208;
+    --c-ink-500: 185 185 178;
+
+    --c-slate-100: 20 22 26;
+    --c-slate-200: 35 38 44;
+    --c-slate-300: 60 64 72;
+    --c-slate-400: 90 95 105;
+    --c-slate-500: 118 124 134;
+    --c-slate-600: 150 155 164;
+
+    --c-gold-200: 124 74 3;
+    --c-gold-300: 138 83 3;
+    --c-gold-400: 161 98 7;
+    --c-gold-500: 180 83 9;
+    --c-gold-600: 146 64 14;
+
+    --c-ember-200: 140 26 41;
+    --c-ember-300: 168 31 48;
+    --c-ember-400: 198 42 61;
+    --c-ember-500: 217 45 67;
+
+    --c-emerald-100: 10 92 51;
+    --c-emerald-300: 15 122 65;
+    --c-emerald-400: 13 122 63;
+    --c-emerald-500: 11 122 63;
+    --c-emerald-600: 10 107 55;
+
+    --c-amber-300: 138 90 3;
+    --c-amber-400: 154 103 0;
+    --c-amber-500: 180 83 9;
+
+    --c-sky-300: 11 111 168;
+    --c-sky-400: 12 127 191;
+    --c-sky-500: 2 132 199;
+    --c-sky-600: 3 105 161;
+
+    --c-rose-100: 136 19 55;
+
+    --c-hairline: 17 20 26;
+
+    --shadow-glow: rgba(180, 83, 9, 0.25);
+    --shadow-inset: rgba(255, 255, 255, 0.9);
+    --shadow-card: rgba(23, 25, 35, 0.18);
+
+    --page-glow-a: rgba(245, 158, 11, 0.13);
+    --page-glow-b: rgba(244, 63, 94, 0.08);
+    --selection: rgba(180, 83, 9, 0.22);
+    --scrollbar: #c9c9c2;
+    --scrollbar-hover: #ababa2;
   }
 
   html,
@@ -16,32 +214,32 @@
   body {
     @apply bg-ink-950 text-slate-200 font-sans antialiased;
     background-image:
-      radial-gradient(900px 500px at 12% -8%, rgba(245, 158, 11, 0.10), transparent 60%),
-      radial-gradient(800px 600px at 100% 0%, rgba(244, 63, 94, 0.07), transparent 55%);
+      radial-gradient(900px 500px at 12% -8%, var(--page-glow-a), transparent 60%),
+      radial-gradient(800px 600px at 100% 0%, var(--page-glow-b), transparent 55%);
     background-attachment: fixed;
   }
 
   ::selection {
-    background: rgba(245, 158, 11, 0.3);
+    background: var(--selection);
   }
 
   /* Slim, themed scrollbars. */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #2c2c3b transparent;
+    scrollbar-color: var(--scrollbar) transparent;
   }
   *::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
   *::-webkit-scrollbar-thumb {
-    background: #26262f;
+    background: var(--scrollbar);
     border-radius: 999px;
     border: 2px solid transparent;
     background-clip: content-box;
   }
   *::-webkit-scrollbar-thumb:hover {
-    background: #34344a;
+    background: var(--scrollbar-hover);
     background-clip: content-box;
   }
 }
@@ -97,7 +295,7 @@
     background-image: linear-gradient(
       to right,
       theme("colors.gold.500") var(--val, 0%),
-      rgba(255, 255, 255, 0.28) var(--val, 0%)
+      rgb(var(--c-hairline) / 0.28) var(--val, 0%)
     );
   }
   .player-range::-webkit-slider-thumb {
@@ -109,7 +307,7 @@
 
   /* Compact dark select used inside the player overlay. */
   .player-select {
-    @apply cursor-pointer rounded-md border border-white/20 bg-black/50 px-1.5 py-1 text-xs text-white outline-none;
+    @apply cursor-pointer rounded-md border border-pure/20 bg-black/50 px-1.5 py-1 text-xs text-pure outline-none;
   }
 
   /* Dual-handle range slider: two native range inputs overlaid on one track;

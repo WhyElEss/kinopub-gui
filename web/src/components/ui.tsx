@@ -28,7 +28,7 @@ export function ProgressBar({
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
       >
         {active && (
-          <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-pure/25 to-transparent" />
         )}
       </div>
     </div>
@@ -154,7 +154,7 @@ export function Toggle({
       >
         <span
           className={clsx(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition",
+            "absolute top-0.5 h-5 w-5 rounded-full bg-pure shadow transition",
             checked ? "left-[22px]" : "left-0.5",
           )}
         />

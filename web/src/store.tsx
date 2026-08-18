@@ -17,6 +17,7 @@ import {
   type Snapshot,
   type UpdateStatus,
 } from "./api";
+import { applyTheme, normalizeTheme } from "./theme";
 import {
   DEFAULT_DIR_TEMPLATE,
   DEFAULT_MOVIE_DIR_TEMPLATE,
@@ -47,6 +48,8 @@ interface AppContextValue {
   refreshUpdate: (force?: boolean) => Promise<void>;
   ffmpegInstall: { supported: boolean; source?: string };
   setSettingsLocal: (s: Settings) => void;
+  // Persists just the theme; the switcher does not own the rest of the form.
+  saveTheme: (theme: string) => Promise<void>;
   setKpAuthLocal: (a: KPStatus) => void;
   refresh: () => void;
   toasts: Toast[];
@@ -74,7 +77,7 @@ const emptySettings: Settings = {
   proxy: "",
   verbosity: "normal",
   noChunked: false,
-  theme: "cinematic",
+  theme: "auto",
   libraryDirs: null,
   maxActiveJobs: 0,
 };
@@ -257,6 +260,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [kpauth.loggedIn]);
 
+  // The theme lives in the settings, so it follows the account to any device;
+  // applying it here covers both the SSE snapshot and a local switch.
+  useEffect(() => {
+    applyTheme(normalizeTheme(settings.theme));
+  }, [settings.theme]);
+
+  const saveTheme = async (theme: string) => {
+    try {
+      // settings is fresh here: the context value is rebuilt whenever it changes.
+      await api.saveSettings({ ...settings, theme });
+    } catch {
+      /* the theme is applied locally either way; the next save retries */
+    }
+  };
+
   const value = useMemo<AppContextValue>(
     () => ({
       connected,
@@ -273,6 +291,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       refreshUpdate,
       ffmpegInstall,
       setSettingsLocal: setSettings,
+      saveTheme,
       setKpAuthLocal: setKpAuth,
       refresh,
       toasts,

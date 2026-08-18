@@ -1,30 +1,58 @@
 /** @type {import('tailwindcss').Config} */
+
+// withAlpha builds a colour that reads its channels from a CSS variable while
+// still honouring Tailwind's /opacity modifier.
+const withAlpha = (v) => `rgb(var(${v}) / <alpha-value>)`;
+
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      // Every colour resolves through a CSS variable holding an "R G B" triplet,
+      // so a theme swap is a variable swap and the class names in the components
+      // never change. <alpha-value> keeps Tailwind's /opacity modifiers working.
       colors: {
         ink: {
-          950: "#07070b",
-          900: "#0b0b12",
-          850: "#101019",
-          800: "#15151f",
-          750: "#1a1a26",
-          700: "#22222f",
-          600: "#2c2c3b",
-          500: "#3a3a4d",
+          950: withAlpha("--c-ink-950"), 900: withAlpha("--c-ink-900"),
+          850: withAlpha("--c-ink-850"), 800: withAlpha("--c-ink-800"),
+          750: withAlpha("--c-ink-750"), 700: withAlpha("--c-ink-700"),
+          600: withAlpha("--c-ink-600"), 500: withAlpha("--c-ink-500"),
+        },
+        slate: {
+          100: withAlpha("--c-slate-100"), 200: withAlpha("--c-slate-200"),
+          300: withAlpha("--c-slate-300"), 400: withAlpha("--c-slate-400"),
+          500: withAlpha("--c-slate-500"), 600: withAlpha("--c-slate-600"),
         },
         gold: {
-          200: "#fde9a8",
-          300: "#fcd34d",
-          400: "#fbbf24",
-          500: "#f59e0b",
-          600: "#d97706",
+          200: withAlpha("--c-gold-200"), 300: withAlpha("--c-gold-300"),
+          400: withAlpha("--c-gold-400"), 500: withAlpha("--c-gold-500"),
+          600: withAlpha("--c-gold-600"),
         },
         ember: {
-          400: "#fb7185",
-          500: "#f43f5e",
+          200: withAlpha("--c-ember-200"), 300: withAlpha("--c-ember-300"),
+          400: withAlpha("--c-ember-400"), 500: withAlpha("--c-ember-500"),
         },
+        emerald: {
+          100: withAlpha("--c-emerald-100"), 300: withAlpha("--c-emerald-300"),
+          400: withAlpha("--c-emerald-400"), 500: withAlpha("--c-emerald-500"),
+          600: withAlpha("--c-emerald-600"),
+        },
+        amber: {
+          300: withAlpha("--c-amber-300"), 400: withAlpha("--c-amber-400"),
+          500: withAlpha("--c-amber-500"),
+        },
+        sky: {
+          300: withAlpha("--c-sky-300"), 400: withAlpha("--c-sky-400"),
+          500: withAlpha("--c-sky-500"), 600: withAlpha("--c-sky-600"),
+        },
+        rose: { 100: withAlpha("--c-rose-100") },
+        // "white" is the HAIRLINE/WASH base — border-white/[0.06] and friends.
+        // On the dark theme it is white; on the light one it flips to near-black,
+        // so ~95 existing utilities keep meaning "a faint line over the surface".
+        white: withAlpha("--c-hairline"),
+        // Literal white, for the few places that must stay white in any theme:
+        // controls over video, and the toggle knob.
+        pure: "#ffffff",
       },
       fontFamily: {
         sans: [
@@ -40,8 +68,8 @@ export default {
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(245,158,11,0.15), 0 8px 40px -12px rgba(245,158,11,0.35)",
-        card: "0 1px 0 0 rgba(255,255,255,0.03) inset, 0 12px 40px -20px rgba(0,0,0,0.8)",
+        glow: "0 0 0 1px rgba(245,158,11,0.15), 0 8px 40px -12px var(--shadow-glow)",
+        card: "0 1px 0 0 var(--shadow-inset) inset, 0 12px 40px -20px var(--shadow-card)",
       },
       keyframes: {
         "fade-in": {

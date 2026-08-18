@@ -469,7 +469,7 @@ export function Player({
     }
   };
 
-  const btn = "rounded-lg p-1.5 text-white/90 transition hover:bg-white/15 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent";
+  const btn = "rounded-lg p-1.5 text-pure/90 transition hover:bg-pure/15 hover:text-pure disabled:opacity-30 disabled:hover:bg-transparent";
 
   return (
     <div
@@ -493,7 +493,7 @@ export function Player({
         <video ref={videoRef} className="h-full w-full bg-black" onClick={togglePlay} />
 
         {loading && !error && (
-          <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/30 text-white">
+          <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/30 text-pure">
             <Loader2 className="h-10 w-10 animate-spin" />
           </div>
         )}
@@ -504,7 +504,7 @@ export function Player({
         {/* Resume prompt: shown when the title has a saved position. */}
         {askResume && !error && (
           <div className="absolute inset-0 z-20 grid place-items-center bg-black/75 p-6 backdrop-blur-sm">
-            <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-ink-900/95 p-6 text-center shadow-2xl">
+            <div className="w-full max-w-sm rounded-2xl border border-pure/10 bg-ink-900/95 p-6 text-center shadow-2xl">
               <p className="text-base font-semibold text-slate-100">{t("Continue watching?")}</p>
               <p className="mt-1 text-sm text-slate-400">{t("You stopped at {time}", { time: fmtTime(resumeAt) })}</p>
               <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
@@ -525,7 +525,7 @@ export function Player({
             chrome ? "opacity-100" : "opacity-0"
           }`}
         >
-          <h3 className="pointer-events-auto min-w-0 truncate pt-1 text-sm font-semibold text-white drop-shadow">{heading || t("Player")}</h3>
+          <h3 className="pointer-events-auto min-w-0 truncate pt-1 text-sm font-semibold text-pure drop-shadow">{heading || t("Player")}</h3>
           <button className={`pointer-events-auto ${btn}`} onClick={onClose} title={t("Close")}>
             <X className="h-5 w-5" />
           </button>
@@ -550,7 +550,7 @@ export function Player({
             aria-label={t("Seek")}
           />
 
-          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-white">
+          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-pure">
             <button className={btn} onClick={togglePlay} title={paused ? t("Play") : t("Pause")}>
               {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
             </button>
@@ -590,13 +590,13 @@ export function Player({
               />
             </div>
 
-            <span className="px-1 text-xs tabular-nums text-white/90">
+            <span className="px-1 text-xs tabular-nums text-pure/90">
               {fmtTime(current)} / {fmtTime(duration)}
             </span>
 
             <div className="ml-auto flex items-center gap-1.5">
               {levels.length > 1 && (
-                <span className="flex items-center gap-1 text-white/90" title={t("Quality")}>
+                <span className="flex items-center gap-1 text-pure/90" title={t("Quality")}>
                   <Gauge className="h-4 w-4" />
                   <select className="player-select" value={activeLevel} onChange={(e) => pickLevel(Number(e.target.value))}>
                     <option value={-1}>{t("Auto")}</option>
@@ -609,7 +609,7 @@ export function Player({
                 </span>
               )}
               {audioTracks.length > 1 && (
-                <span className="flex items-center gap-1 text-white/90" title={t("Audio track")}>
+                <span className="flex items-center gap-1 text-pure/90" title={t("Audio track")}>
                   <Volume2 className="h-4 w-4" />
                   <select className="player-select max-w-[200px]" value={activeAudio} onChange={(e) => pickAudio(Number(e.target.value))}>
                     {audioTracks.map((a) => (

@@ -22,6 +22,7 @@ import type { KPStatus, KPUser } from "./api";
 import { type Page, pushRoute, useRoute } from "./router";
 import { useI18n } from "./i18n";
 import { LangSwitcher } from "./components/LangSwitcher";
+import { ThemeSwitcher } from "./components/ThemeSwitcher";
 import { DiscoverPage } from "./pages/Discover";
 import { DownloadPage } from "./pages/Download";
 import { QueuePage } from "./pages/Queue";
@@ -135,6 +136,7 @@ export default function App() {
                 <span className="sm:hidden">{t("Update")}</span>
               </button>
             )}
+            <ThemeSwitcher />
             <LangSwitcher />
           </div>
         </header>
