@@ -116,7 +116,7 @@ function EpisodeRow({
   const cancelEp = act(() => api.cancelEpisode(jobId, ep.season, ep.episode), t("{ep} canceled — the rest keep downloading", { ep: ep.key }));
 
   return (
-    <div className="rounded-xl border border-white/[0.05] bg-ink-900/40 px-3 py-2.5">
+    <div className="rounded-xl border border-white/[0.05] bg-ink-850 px-3 py-2.5">
       <div className="flex items-center gap-3">
         <span
           className={clsx(
@@ -248,10 +248,22 @@ function EpisodeRow({
   );
 }
 
-export function JobCard({ job }: { job: JobView }) {
+export function JobCard({
+  job,
+  epsOpen,
+  onToggleEps,
+}: {
+  job: JobView;
+  // Undefined means the user has not touched this card's Episodes button, so it
+  // still follows the "open while downloading" default. Once they click, the
+  // choice is theirs and outlives the card being remounted.
+  epsOpen?: boolean;
+  onToggleEps: (open: boolean) => void;
+}) {
   const { toast, jobs } = useApp();
   const { t } = useI18n();
-  const [showEps, setShowEps] = useState(job.status === "running" || job.status === "resolving");
+  const showEps = epsOpen ?? (job.status === "running" || job.status === "resolving");
+  const setShowEps = (open: boolean) => onToggleEps(open);
   const [showLogs, setShowLogs] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -416,7 +428,7 @@ export function JobCard({ job }: { job: JobView }) {
             </span>
             <div className="ml-auto flex items-center gap-2">
               {totalEps > 0 && (
-                <button className="btn-ghost px-3 py-1.5" onClick={() => setShowEps((v) => !v)}>
+                <button className="btn-ghost px-3 py-1.5" onClick={() => setShowEps(!showEps)}>
                   {showEps ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                   {t("Episodes ({n})", { n: totalEps })}
                 </button>

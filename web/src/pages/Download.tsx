@@ -325,7 +325,10 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
                   <option value="mp4">MP4</option>
                 </select>
               </Field>
-              <Field label={t("Concurrency")} hint={t("parallel downloads (1–16)")}>
+              <Field
+                label={t("Episodes at once within a download")}
+                hint={t("How many episodes of a series download together. A film has one, so this does nothing for films.")}
+              >
                 <input
                   type="number"
                   min={1}

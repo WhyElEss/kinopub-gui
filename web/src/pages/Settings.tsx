@@ -216,7 +216,10 @@ export function SettingsPage() {
               <option value="mp4">MP4</option>
             </select>
           </Field>
-          <Field label={t("Concurrency")}>
+          <Field
+            label={t("Episodes at once within a download")}
+            hint={t("How many episodes of a series download together. A film has one, so this does nothing for films.")}
+          >
             <input type="number" min={1} max={16} className="input" value={form.concurrency} onChange={(e) => set("concurrency", e.target.value === "" ? 1 : Math.max(1, Number(e.target.value)))} />
           </Field>
           <Field label={t("Retries")}>
@@ -228,7 +231,7 @@ export function SettingsPage() {
           <Field label={t("Proxy")}>
             <input className="input" placeholder="socks5://127.0.0.1:1080" value={form.proxy} onChange={(e) => set("proxy", e.target.value)} />
           </Field>
-          <Field label={t("Max simultaneous downloads")}>
+          <Field label={t("Downloads at once")}>
             <input
               type="number"
               min={0}

@@ -66,14 +66,17 @@ const RU: Record<string, string> = {
   "e.g. 1,3-5 — or use the browser below": "напр. 1,3-5 — или отметьте ниже",
   Episodes: "Эпизоды",
   "e.g. 1,3-5": "напр. 1,3-5",
-  Concurrency: "Параллельно",
-  "parallel downloads (1–16)": "параллельных загрузок (1–16)",
+  // Both concurrency settings name their unit first: one counts downloads in
+  // the queue, the other episodes inside one download.
+  "Episodes at once within a download": "Серий одновременно в одной загрузке",
+  "How many episodes of a series download together. A film has one, so this does nothing for films.":
+    "Сколько серий сериала качать сразу. У фильма серия одна, поэтому значение ни на что не влияет.",
   Retries: "Повторы",
   "Min interval (ms)": "Мин. интервал (мс)",
   "throttle requests (0–60000)": "ограничение запросов (0–60000)",
-  "Max simultaneous downloads": "Макс. одновременных загрузок",
+  "Downloads at once": "Загрузок одновременно",
   "0 = no limit. When set, extra downloads wait in a queue you can reorder.":
-    "0 = без лимита. Если задать — лишние загрузки встают в очередь, которую можно менять местами.",
+    "0 = без лимита. Лишние загрузки ждут в очереди, её можно менять местами.",
   Proxy: "Прокси",
   "http / https / socks5": "http / https / socks5",
   "Interactive audio menu": "Интерактивный выбор аудио",

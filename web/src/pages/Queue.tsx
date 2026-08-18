@@ -6,7 +6,7 @@ import { JobCard } from "../components/JobCard";
 import { EmptyState } from "../components/ui";
 
 export function QueuePage({ onNew }: { onNew: () => void }) {
-  const { jobs, toast } = useApp();
+  const { jobs, toast, epsOpen, toggleEps } = useApp();
   const { t } = useI18n();
 
   const active = jobs.filter((j) => !["completed", "failed", "canceled"].includes(j.status));
@@ -56,7 +56,7 @@ export function QueuePage({ onNew }: { onNew: () => void }) {
       ) : (
         <div className="space-y-4">
           {active.map((j) => (
-            <JobCard key={j.id} job={j} />
+            <JobCard key={j.id} job={j} epsOpen={epsOpen[j.id]} onToggleEps={(o) => toggleEps(j.id, o)} />
           ))}
           {finished.length > 0 && active.length > 0 && (
             <div className="flex items-center gap-3 pt-2 text-xs uppercase tracking-wide text-slate-500">
@@ -65,7 +65,7 @@ export function QueuePage({ onNew }: { onNew: () => void }) {
             </div>
           )}
           {finished.map((j) => (
-            <JobCard key={j.id} job={j} />
+            <JobCard key={j.id} job={j} epsOpen={epsOpen[j.id]} onToggleEps={(o) => toggleEps(j.id, o)} />
           ))}
         </div>
       )}

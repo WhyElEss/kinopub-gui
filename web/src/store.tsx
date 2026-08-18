@@ -47,6 +47,12 @@ interface AppContextValue {
   update: UpdateStatus | null;
   refreshUpdate: (force?: boolean) => Promise<void>;
   ffmpegInstall: { supported: boolean; source?: string };
+  // Which job cards have their episode list open, by job id. Held here because
+  // the card is remounted whenever a job moves between the active and finished
+  // lists, and the page itself unmounts on navigation — both would otherwise
+  // discard a list the user opened. Undefined = untouched, follow the default.
+  epsOpen: Record<string, boolean>;
+  toggleEps: (jobId: string, open: boolean) => void;
   setSettingsLocal: (s: Settings) => void;
   // Persists just the theme; the switcher does not own the rest of the form.
   saveTheme: (theme: string) => Promise<void>;
@@ -103,6 +109,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [ffmpegInstall, setFfmpegInstall] = useState<{ supported: boolean; source?: string }>({
     supported: false,
   });
+  const [epsOpen, setEpsOpen] = useState<Record<string, boolean>>({});
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
   // The version this tab first loaded with. After a self-update the server
@@ -275,6 +282,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const toggleEps = (jobId: string, open: boolean) =>
+    setEpsOpen((cur) => ({ ...cur, [jobId]: open }));
+
   const value = useMemo<AppContextValue>(
     () => ({
       connected,
@@ -290,6 +300,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       update,
       refreshUpdate,
       ffmpegInstall,
+      epsOpen,
+      toggleEps,
       setSettingsLocal: setSettings,
       saveTheme,
       setKpAuthLocal: setKpAuth,
@@ -298,7 +310,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       dismissToast,
     }),
-    [connected, version, canOpenFiles, jobs, kpauth, kpUser, kpUserError, ffmpeg, settings, settingsLoaded, update, ffmpegInstall, toasts],
+    [connected, version, canOpenFiles, epsOpen, jobs, kpauth, kpUser, kpUserError, ffmpeg, settings, settingsLoaded, update, ffmpegInstall, toasts],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
