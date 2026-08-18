@@ -100,8 +100,11 @@
       --c-slate-200: 35 38 44;
       --c-slate-300: 60 64 72;
       --c-slate-400: 90 95 105;
-      --c-slate-500: 118 124 134;
-      --c-slate-600: 150 155 164;
+      /* 4.74:1 and 3.89:1 against the page — measured, not guessed. The first
+         pair tried (118/150) came out at 3.88 and 2.58, i.e. a secondary label
+         and a meta line that AA would fail on a white card. */
+      --c-slate-500: 104 110 120;
+      --c-slate-600: 118 124 133;
 
       --c-gold-200: 124 74 3;
       --c-gold-300: 138 83 3;
@@ -161,8 +164,8 @@
     --c-slate-200: 35 38 44;
     --c-slate-300: 60 64 72;
     --c-slate-400: 90 95 105;
-    --c-slate-500: 118 124 134;
-    --c-slate-600: 150 155 164;
+    --c-slate-500: 104 110 120;
+    --c-slate-600: 118 124 133;
 
     --c-gold-200: 124 74 3;
     --c-gold-300: 138 83 3;
