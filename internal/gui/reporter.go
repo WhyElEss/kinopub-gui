@@ -71,6 +71,27 @@ func (r *eventReporter) Start(plan domain.SeriesPlan) {
 		ev.Error = ""
 		ev.Tracks = nil
 	}
+	// Episodes the state store already has on disk. They are not in Planned, so
+	// without this their rows would keep whatever state a previous run left —
+	// a stale "failed" row on an episode that is actually downloaded, which the
+	// card's status is now read off. Seeding a row for one that has none also
+	// makes a partly-downloaded series show its full episode list.
+	for _, ce := range plan.Completed {
+		key := epKey(ce.Key)
+		if ce.Title != "" {
+			r.job.titles[key] = ce.Title
+		}
+		ev, ok := r.job.episodes[key]
+		if !ok {
+			ev = &EpisodeView{Key: key, Season: ce.Key.Season, Episode: ce.Key.Episode, Title: ce.Title}
+			r.job.episodes[key] = ev
+		}
+		ev.State = epCompleted
+		ev.Percent = 100
+		ev.SpeedBps = 0
+		ev.ETASeconds = 0
+		ev.Error = ""
+	}
 	r.job.mu.Unlock()
 	r.mgr.publishNow(r.job)
 }

@@ -216,3 +216,34 @@ func TestReporterUpdateSpeed_NegativeInstClampedToZero(t *testing.T) {
 		t.Errorf("negative instantaneous speed should clamp to 0, got %v", ev.SpeedBps)
 	}
 }
+
+// Episodes the engine skipped because they are already downloaded must show as
+// completed — including ones this card has never had a row for.
+func TestReporterStart_MarksAlreadyDownloadedRows(t *testing.T) {
+	_, j, r := newReporterJob()
+	// A stale failed row for an episode that is in fact on disk (its file was
+	// finished by an earlier run whose card outcome said otherwise).
+	j.episodes["S1E1"] = &EpisodeView{Key: "S1E1", Season: 1, Episode: 1, State: epFailed, Error: "boom"}
+
+	r.Start(domain.SeriesPlan{
+		Planned: []domain.PlannedEpisode{{Key: domain.EpisodeKey{Season: 1, Episode: 3}}},
+		Completed: []domain.PlannedEpisode{
+			{Key: domain.EpisodeKey{Season: 1, Episode: 1}},
+			{Key: domain.EpisodeKey{Season: 1, Episode: 2}, Title: "Ep2"},
+		},
+	})
+
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	e1 := j.episodes["S1E1"]
+	if e1.State != epCompleted || e1.Percent != 100 || e1.Error != "" {
+		t.Errorf("stale failed row not corrected: %+v", e1)
+	}
+	e2 := j.episodes["S1E2"]
+	if e2 == nil || e2.State != epCompleted || e2.Title != "Ep2" {
+		t.Errorf("missing row for an already-downloaded episode: %+v", e2)
+	}
+	if got := j.episodes["S1E3"].State; got != epPending {
+		t.Errorf("planned row state = %q, want %q", got, epPending)
+	}
+}

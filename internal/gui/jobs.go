@@ -784,23 +784,29 @@ func (m *JobManager) run(parent context.Context, j *Job, cfg domain.RunConfig, t
 
 	result, runErr := app.Run(ctx, cfg)
 
+	finalizeRun(j, result, ctx.Err() != nil, runErr)
+	m.publishNow(j)
+}
+
+// finalizeRun records the outcome of a finished run on its card: it settles the
+// episode rows, tallies them and decides the card's status. Separated from run()
+// so the verdict can be tested without an engine.
+func finalizeRun(j *Job, result domain.RunResult, canceled bool, runErr error) {
 	j.mu.Lock()
+	defer j.mu.Unlock()
 	fin := time.Now()
 	j.finishedAt = &fin
 	j.pendingAudio = nil
-	j.summary = &SummaryView{
-		Total:     result.Total,
-		Succeeded: result.Succeeded,
-		Failed:    result.Failed,
-		Skipped:   result.Skipped,
-	}
+	// A stop that outranks the episode tally (the user paused or canceled, or the
+	// run itself failed to get off the ground) decides the status on its own.
+	stopped := true
 	switch {
 	case j.paused.Load():
 		// Paused (not canceled): keep progress; episodes are held as "paused" and
 		// the job can be resumed, which re-runs and continues from .hls-tmp.
 		j.status = statusPaused
 		j.errMsg = ""
-	case ctx.Err() != nil:
+	case canceled:
 		j.status = statusCanceled
 		if j.errMsg == "" {
 			j.errMsg = "canceled"
@@ -808,19 +814,65 @@ func (m *JobManager) run(parent context.Context, j *Job, cfg domain.RunConfig, t
 	case runErr != nil:
 		j.status = statusFailed
 		j.errMsg = runErr.Error()
-	case result.Failed > 0 && result.Succeeded == 0 && result.Total > 0:
-		j.status = statusFailed
-		j.errMsg = fmt.Sprintf("%d of %d episodes failed", result.Failed, result.Total)
 	default:
-		j.status = statusCompleted
+		stopped = false
 	}
+	// Settle the rows BEFORE the tally: an episode left pending/running by a run
+	// that has actually stopped is a failure, and the card's verdict must be read
+	// off the settled rows.
 	if j.status == statusPaused {
 		settlePausedEpisodesLocked(j)
 	} else {
-		settleUnfinishedEpisodesLocked(j, ctx.Err() != nil)
+		settleUnfinishedEpisodesLocked(j, canceled)
 	}
-	j.mu.Unlock()
-	m.publishNow(j)
+	// The card describes the WHOLE download, not just the run that ended. A
+	// per-episode retry runs with a scope of one episode, so that run's own result
+	// ("1 of 1 succeeded") would declare a series with four broken episodes
+	// Completed — and hide the Retry button, which keys off summary.failed. Tally
+	// the episode rows instead: they accumulate across runs (a re-run resets only
+	// the episodes it actually re-attempts).
+	tally := tallyEpisodesLocked(j)
+	if tally.Total > 0 {
+		j.summary = &tally
+	} else {
+		// No per-episode rows (a movie, a dry run, a source that never resolved):
+		// the run's own result is all there is to report.
+		j.summary = &SummaryView{
+			Total:     result.Total,
+			Succeeded: result.Succeeded,
+			Failed:    result.Failed,
+			Skipped:   result.Skipped,
+		}
+	}
+	if !stopped {
+		// Not paused, not canceled, no run error: the rows decide.
+		if j.summary.Failed > 0 {
+			j.status = statusFailed
+			j.errMsg = fmt.Sprintf("%d of %d episodes failed", j.summary.Failed, j.summary.Total)
+		} else {
+			j.status = statusCompleted
+			j.errMsg = ""
+		}
+	}
+}
+
+// tallyEpisodesLocked counts the job's episode rows by outcome. Rows in neither
+// a completed nor a failed state (paused ones, on a paused job) count as
+// skipped, so the three numbers always add up to Total. Caller must hold j.mu.
+func tallyEpisodesLocked(j *Job) SummaryView {
+	var sum SummaryView
+	for _, ev := range j.episodes {
+		sum.Total++
+		switch ev.State {
+		case epCompleted:
+			sum.Succeeded++
+		case epFailed:
+			sum.Failed++
+		default:
+			sum.Skipped++
+		}
+	}
+	return sum
 }
 
 // settlePausedEpisodesLocked freezes every non-completed episode of a paused job

@@ -146,6 +146,7 @@ const RU: Record<string, string> = {
   Stop: "Стоп",
   Remove: "Удалить",
   Retry: "Повторить",
+  "Retry all ({n})": "Повторить все ({n})",
   Resume: "Продолжить",
   paused: "на паузе",
   "Pause this episode — hold it in the queue": "Поставить серию на паузу — удержать в очереди",

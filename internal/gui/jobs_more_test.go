@@ -421,3 +421,111 @@ func TestRerunJobEpisode_RunningRejected(t *testing.T) {
 		t.Error("rerunJobEpisode on a running job should be rejected (use live retry)")
 	}
 }
+
+// A run that ends with some episodes downloaded and some failed is NOT a
+// completed download: the card must say so, and its summary must count every
+// episode row — that summary is what puts the Retry button on the card.
+func TestFinalizeRun_PartialFailureIsFailed(t *testing.T) {
+	j := newJob("j1", "u", domain.RunConfig{})
+	for i := 1; i <= 6; i++ {
+		k := epKey(domain.EpisodeKey{Season: 1, Episode: i})
+		j.episodes[k] = &EpisodeView{Key: k, Season: 1, Episode: i, State: epCompleted, Percent: 100}
+	}
+	for i := 7; i <= 10; i++ {
+		k := epKey(domain.EpisodeKey{Season: 1, Episode: i})
+		j.episodes[k] = &EpisodeView{Key: k, Season: 1, Episode: i, State: epFailed, Error: "boom"}
+	}
+
+	finalizeRun(j, domain.RunResult{Total: 10, Succeeded: 6, Failed: 4}, false, nil)
+
+	if j.status != statusFailed {
+		t.Errorf("status = %q, want %q", j.status, statusFailed)
+	}
+	if j.summary.Succeeded != 6 || j.summary.Failed != 4 || j.summary.Total != 10 {
+		t.Errorf("summary = %+v, want 6 ok / 4 failed / 10 total", *j.summary)
+	}
+}
+
+// A per-episode retry runs with a scope of ONE episode. Succeeding at it must
+// not reset the card to "completed" while its siblings are still broken — the
+// bug that made every manual retry look like the whole series was done.
+func TestFinalizeRun_NarrowedRetryKeepsCardFailed(t *testing.T) {
+	j := newJob("j1", "u", domain.RunConfig{})
+	j.episodes["S1E1"] = &EpisodeView{Key: "S1E1", Season: 1, Episode: 1, State: epCompleted, Percent: 100}
+	j.episodes["S1E2"] = &EpisodeView{Key: "S1E2", Season: 1, Episode: 2, State: epCompleted, Percent: 100}
+	j.episodes["S1E3"] = &EpisodeView{Key: "S1E3", Season: 1, Episode: 3, State: epFailed, Error: "boom"}
+
+	// The retry run itself: one episode planned, one succeeded.
+	finalizeRun(j, domain.RunResult{Total: 1, Succeeded: 1}, false, nil)
+
+	if j.status != statusFailed {
+		t.Errorf("status = %q, want %q (S1E3 is still broken)", j.status, statusFailed)
+	}
+	if j.summary.Failed != 1 || j.summary.Total != 3 {
+		t.Errorf("summary = %+v, want 1 failed of 3", *j.summary)
+	}
+}
+
+func TestFinalizeRun_AllCompleted(t *testing.T) {
+	j := newJob("j1", "u", domain.RunConfig{})
+	j.episodes["S1E1"] = &EpisodeView{Key: "S1E1", Season: 1, Episode: 1, State: epCompleted, Percent: 100}
+
+	finalizeRun(j, domain.RunResult{Total: 1, Succeeded: 1}, false, nil)
+
+	if j.status != statusCompleted {
+		t.Errorf("status = %q, want %q", j.status, statusCompleted)
+	}
+	if j.summary.Failed != 0 || j.summary.Succeeded != 1 {
+		t.Errorf("summary = %+v, want a clean 1/1", *j.summary)
+	}
+}
+
+// An unfinished row on a stopped run settles to failed and is counted as such.
+func TestFinalizeRun_SettlesUnfinishedRows(t *testing.T) {
+	j := newJob("j1", "u", domain.RunConfig{})
+	j.episodes["S1E1"] = &EpisodeView{Key: "S1E1", Season: 1, Episode: 1, State: epRunning, Percent: 42}
+
+	finalizeRun(j, domain.RunResult{Total: 1}, false, nil)
+
+	if got := j.episodes["S1E1"].State; got != epFailed {
+		t.Errorf("row state = %q, want %q", got, epFailed)
+	}
+	if j.status != statusFailed || j.summary.Failed != 1 {
+		t.Errorf("status = %q, summary = %+v, want failed 1/1", j.status, *j.summary)
+	}
+}
+
+// A paused job keeps its rows (and its status): pausing is not failing.
+func TestFinalizeRun_PausedKeepsRows(t *testing.T) {
+	j := newJob("j1", "u", domain.RunConfig{})
+	j.episodes["S1E1"] = &EpisodeView{Key: "S1E1", Season: 1, Episode: 1, State: epCompleted, Percent: 100}
+	j.episodes["S1E2"] = &EpisodeView{Key: "S1E2", Season: 1, Episode: 2, State: epRunning, Percent: 30}
+	j.paused.Store(true)
+
+	finalizeRun(j, domain.RunResult{Total: 2, Succeeded: 1}, false, nil)
+
+	if j.status != statusPaused {
+		t.Errorf("status = %q, want %q", j.status, statusPaused)
+	}
+	if got := j.episodes["S1E2"].State; got != epPaused {
+		t.Errorf("row state = %q, want %q", got, epPaused)
+	}
+	if j.summary.Failed != 0 {
+		t.Errorf("summary = %+v, want no failures on a paused job", *j.summary)
+	}
+}
+
+// With no episode rows at all (a movie, a dry run) the run's own result is the
+// only thing to report.
+func TestFinalizeRun_NoRowsFallsBackToResult(t *testing.T) {
+	j := newJob("j1", "u", domain.RunConfig{})
+
+	finalizeRun(j, domain.RunResult{Total: 3, Succeeded: 2, Failed: 1}, false, nil)
+
+	if j.summary.Total != 3 || j.summary.Succeeded != 2 || j.summary.Failed != 1 {
+		t.Errorf("summary = %+v, want the run result verbatim", *j.summary)
+	}
+	if j.status != statusFailed {
+		t.Errorf("status = %q, want %q", j.status, statusFailed)
+	}
+}

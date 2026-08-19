@@ -14,6 +14,13 @@ type SeriesPlan struct {
 	// row per entry so not-yet-started episodes are visible up front and can be
 	// reordered ("download next").
 	Planned []PlannedEpisode
+
+	// Completed lists the episodes of the same scope that are ALREADY on disk
+	// according to the state store, which is why they are absent from Planned.
+	// The GUI marks their rows completed: a card whose status is read off its
+	// rows must not report an episode as failed when the run skipped it precisely
+	// because it is finished.
+	Completed []PlannedEpisode
 }
 
 // PlannedEpisode is a lightweight episode descriptor used to seed the UI's

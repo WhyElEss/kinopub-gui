@@ -357,6 +357,9 @@ export function JobCard({
   // failure, a cancellation, or a partial success. Completed-clean jobs don't.
   const canRetry =
     finished && (job.status === "failed" || job.status === "canceled" || (job.summary?.failed ?? 0) > 0);
+  // One click re-attempts every broken episode at the configured concurrency, so
+  // say how many there are: retrying them one row at a time is not the only way.
+  const failedEps = job.episodes.filter((e) => e.state === "failed").length;
 
   return (
     <div className="card animate-fade-in overflow-hidden">
@@ -465,7 +468,8 @@ export function JobCard({
                 <>
                   {canRetry && (
                     <button className="btn-ghost px-3 py-1.5 text-gold-300" onClick={retry} disabled={busy}>
-                      <RotateCw className="h-3.5 w-3.5" /> {t("Retry")}
+                      <RotateCw className="h-3.5 w-3.5" />{" "}
+                      {failedEps > 1 ? t("Retry all ({n})", { n: failedEps }) : t("Retry")}
                     </button>
                   )}
                   <button className="btn-ghost px-3 py-1.5" onClick={remove} disabled={busy}>

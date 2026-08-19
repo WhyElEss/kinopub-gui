@@ -124,6 +124,12 @@ func (e *engine) runHLS(ctx context.Context, cfg domain.RunConfig) (domain.RunRe
 	// 4. Filter episodes.
 	allMatching := e.matchingEpisodes(series, cfg)
 	selected := e.filterCompleted(allMatching, state, cfg)
+	// retriable keeps every not-yet-completed episode of the run's scope, even
+	// when RetryOnly narrows what this run STARTS with. A live per-episode retry
+	// reconstructs its work unit from this set, so a second failed episode can be
+	// re-queued into a running single-episode retry instead of being dropped
+	// (which is what forced the user to retry failures strictly one at a time).
+	retriable := selected
 	// A per-episode retry narrows this run to just the requested episode(s) so it
 	// re-downloads only what the user clicked, not every not-yet-completed one.
 	if len(cfg.RetryOnly) > 0 {
@@ -144,7 +150,9 @@ func (e *engine) runHLS(ctx context.Context, cfg domain.RunConfig) (domain.RunRe
 		return domain.RunResult{Total: 0}, nil
 	}
 
-	alreadyCompleted := len(allMatching) - len(selected)
+	// Counted against the run's full scope, not the narrowed set: a retry of one
+	// episode has not "already completed" the nine it simply isn't attempting.
+	alreadyCompleted := len(allMatching) - len(retriable)
 	log.Info("HLS download starting",
 		domain.F("to_download", len(selected)),
 		domain.F("already_completed", alreadyCompleted),
@@ -206,6 +214,21 @@ func (e *engine) runHLS(ctx context.Context, cfg domain.RunConfig) (domain.RunRe
 	for _, ep := range selected {
 		planned = append(planned, domain.PlannedEpisode{Key: ep.Key, Title: ep.Title})
 	}
+	// Episodes of this scope that the state store already considers downloaded.
+	// Reporting them keeps a card's rows truthful: without this a re-run scoped
+	// to one episode would leave its siblings' rows in whatever state they had.
+	// Derived from what this run does NOT re-download, so ForceRedownload (which
+	// re-attempts completed episodes) reports none of them as already done.
+	stillToGo := make(map[string]bool, len(retriable))
+	for _, ep := range retriable {
+		stillToGo[episodeKeyStr(ep.Key)] = true
+	}
+	var completedEps []domain.PlannedEpisode
+	for _, ep := range allMatching {
+		if !stillToGo[episodeKeyStr(ep.Key)] {
+			completedEps = append(completedEps, domain.PlannedEpisode{Key: ep.Key, Title: ep.Title})
+		}
+	}
 	plan := domain.SeriesPlan{
 		Title:              series.Title,
 		PosterURL:          series.PosterURL,
@@ -214,6 +237,7 @@ func (e *engine) runHLS(ctx context.Context, cfg domain.RunConfig) (domain.RunRe
 		AlreadyCompleted:   alreadyCompleted,
 		CompletedPerSeason: countCompletedPerSeason(allMatching, state, e.deps.StateStore),
 		Planned:            planned,
+		Completed:          completedEps,
 	}
 	e.deps.ProgressReporter.Start(plan)
 	defer e.deps.ProgressReporter.Stop()
@@ -245,12 +269,13 @@ func (e *engine) runHLS(ctx context.Context, cfg domain.RunConfig) (domain.RunRe
 	)
 	errEpisodeCanceled := fmt.Errorf("canceled")
 	// epInfo lets the live-retry control reconstruct a pending unit for any
-	// selected episode by key (after it has failed and left the queues).
+	// retriable episode by key (after it has failed and left the queues, or when
+	// a narrowed retry run never queued it in the first place).
 	epInfo := make(map[string]struct {
 		ep       domain.Episode
 		manifest string
-	}, len(selected))
-	for _, ep := range selected {
+	}, len(retriable))
+	for _, ep := range retriable {
 		if mURL, ok := manifestMap[ep.Key]; ok {
 			epInfo[episodeKeyStr(ep.Key)] = struct {
 				ep       domain.Episode
@@ -784,8 +809,14 @@ func (e *engine) runHLS(ctx context.Context, cfg domain.RunConfig) (domain.RunRe
 	sweep(newQueue)   // never-started episodes
 	sweep(pausedHold) // episodes held aside by a per-episode pause
 
+	// A live retry can pull in an episode outside this run's starting set, so the
+	// tally — not the starting set — is the floor for Total.
+	total := len(selected)
+	if n := succeeded + failed + skipped; n > total {
+		total = n
+	}
 	result := domain.RunResult{
-		Total:     len(selected),
+		Total:     total,
 		Succeeded: succeeded,
 		Failed:    failed,
 		Skipped:   skipped,
