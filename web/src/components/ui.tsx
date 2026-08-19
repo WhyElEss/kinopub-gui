@@ -3,28 +3,35 @@ import clsx from "clsx";
 import { Film, Loader2, X } from "lucide-react";
 import { imgURL } from "../api";
 
+// The variants are named for the STATE they report, not for a colour, so a
+// palette change is a change in one place. There is no "blue" variant any
+// more: it existed for a deferred episode, which is amber now — waiting on a
+// retry after an error is a warning, and it has to be told apart from the
+// running episode beside it, which is the accent.
 export function ProgressBar({
   value,
-  variant = "gold",
+  variant = "accent",
   active = false,
   className,
 }: {
   value: number;
-  variant?: "gold" | "green" | "rose" | "slate" | "blue";
+  variant?: "accent" | "green" | "amber" | "rose" | "slate";
   active?: boolean;
   className?: string;
 }) {
+  // Flat fills. A two-stop gradient across a 2px-high bar was never visible as
+  // a gradient, only as a bar whose end read a shade darker than its start.
   const fill = {
-    gold: "from-gold-400 to-gold-600",
-    green: "from-emerald-400 to-emerald-600",
-    rose: "from-ember-400 to-ember-500",
-    slate: "from-slate-500 to-slate-600",
-    blue: "from-sky-400 to-sky-600",
+    accent: "bg-accent-500",
+    green: "bg-emerald-500",
+    amber: "bg-amber-500",
+    rose: "bg-ember-500",
+    slate: "bg-slate-500",
   }[variant];
   return (
     <div className={clsx("relative h-2 overflow-hidden rounded-full bg-white/[0.06]", className)}>
       <div
-        className={clsx("h-full rounded-full bg-gradient-to-r transition-[width] duration-300", fill)}
+        className={clsx("h-full rounded-full transition-[width] duration-300", fill)}
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
       >
         {active && (
@@ -111,7 +118,7 @@ export function Modal({
       <div className="fixed inset-0 backdrop-blur-sm" onMouseDown={onClose} />
       <div
         className={clsx(
-          "card relative my-auto w-full animate-fade-in p-6",
+          "card relative my-auto w-full animate-fade-in p-6 shadow-pop",
           wide ? "max-w-3xl" : "max-w-lg",
         )}
       >
@@ -149,7 +156,7 @@ export function Toggle({
         onClick={() => onChange(!checked)}
         className={clsx(
           "relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition",
-          checked ? "bg-gold-500" : "bg-white/[0.12]",
+          checked ? "bg-accent-500" : "bg-white/[0.12]",
         )}
       >
         <span

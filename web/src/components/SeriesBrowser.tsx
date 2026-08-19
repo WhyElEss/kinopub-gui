@@ -64,7 +64,7 @@ export function SeriesBrowser({
             <span className="chip border-white/10 bg-white/[0.04] text-slate-300">
               {t("{n} episodes", { n: preview.total })}
             </span>
-            <span className="chip border-gold-500/25 bg-gold-500/10 text-gold-300">
+            <span className="chip border-accent-500/25 bg-accent-500/10 text-accent-300">
               <Download className="h-3 w-3" /> {t("{n} to download", { n: selectedKeys.size })}
             </span>
             {preview.alreadyCompleted > 0 && (
@@ -119,9 +119,9 @@ export function SeriesBrowser({
                   title={t("Toggle season")}
                   className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition disabled:opacity-30 ${
                     state === "all"
-                      ? "border-gold-500 bg-gold-500 text-ink-950"
+                      ? "border-accent-500 bg-accent-500 text-ink-950"
                       : state === "some"
-                        ? "border-gold-500 bg-gold-500/30 text-gold-200"
+                        ? "border-accent-500 bg-accent-500/30 text-accent-200"
                         : "border-white/20"
                   }`}
                 >
@@ -164,7 +164,7 @@ export function SeriesBrowser({
                         ) : (
                           <span
                             className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${
-                              on ? "border-gold-500 bg-gold-500 text-ink-950" : "border-white/20"
+                              on ? "border-accent-500 bg-accent-500 text-ink-950" : "border-white/20"
                             }`}
                           >
                             {on && <Check className="h-3.5 w-3.5" />}

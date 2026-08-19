@@ -34,7 +34,7 @@ export function ThemeSwitcher() {
             aria-pressed={current === id}
             className={clsx(
               "rounded-full p-1.5 transition",
-              current === id ? "bg-gold-500 text-ink-950" : "text-slate-400 hover:text-slate-200",
+              current === id ? "bg-accent-500 text-ink-950" : "text-slate-400 hover:text-slate-200",
             )}
           >
             <Icon className="h-3.5 w-3.5" />

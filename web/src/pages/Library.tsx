@@ -160,7 +160,7 @@ function SeriesCard({ s, onDeleted, onOpenCard }: { s: LibrarySeries; onDeleted:
         </div>
       </button>
       {open && (
-        <div className="border-t border-white/[0.05] bg-black/20 p-3">
+        <div className="border-t border-ink-700 bg-ink-950 p-3">
           <div className="mb-2 flex justify-end gap-2">
             {kpauth.loggedIn && itemId && (
               <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => onOpenCard(itemId)}>
@@ -186,7 +186,7 @@ function SeriesCard({ s, onDeleted, onOpenCard }: { s: LibrarySeries; onDeleted:
           </div>
           <div className="grid gap-1 sm:grid-cols-2">
             {episodes.map((e) => (
-              <div key={e.key} className="group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-white/[0.03]">
+              <div key={e.key} className="group flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-white/[0.03]">
                 {e.exists ? (
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400/80" />
                 ) : (
@@ -198,7 +198,7 @@ function SeriesCard({ s, onDeleted, onOpenCard }: { s: LibrarySeries; onDeleted:
                 <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{bytes(e.bytes)}</span>
                 {e.exists && (
                   <button
-                    className="shrink-0 rounded-md p-1 text-slate-500 opacity-0 transition hover:bg-white/[0.08] hover:text-gold-300 group-hover:opacity-100"
+                    className="shrink-0 rounded-md p-1 text-slate-500 opacity-0 transition hover:bg-white/[0.08] hover:text-accent-300 group-hover:opacity-100"
                     title={canOpen ? t("Open") : t("Copy path")}
                     onClick={() => (canOpen ? openPath(e.path) : copyPath(e.path))}
                   >
@@ -234,11 +234,11 @@ function TypeChip({ active, count, onClick, children }: { active: boolean; count
     <button
       onClick={onClick}
       className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition ${
-        active ? "bg-gold-500/[0.14] text-gold-200" : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
+        active ? "bg-accent-500/[0.14] text-accent-200" : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
       }`}
     >
       {children}
-      <span className={`text-xs tabular-nums ${active ? "text-gold-300/70" : "text-slate-600"}`}>{count}</span>
+      <span className={`text-xs tabular-nums ${active ? "text-accent-300/70" : "text-slate-600"}`}>{count}</span>
     </button>
   );
 }
@@ -298,8 +298,8 @@ export function LibraryPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <header className="flex items-center justify-between">
-        <div>
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-100">{t("Library")}</h1>
           <p className="mt-1 text-sm text-slate-400">
             {t("Downloads found in your output folders")}

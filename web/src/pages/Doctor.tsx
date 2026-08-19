@@ -62,7 +62,7 @@ export function DoctorPage() {
       <div className="card space-y-4 p-5">
         <Field label={t("Folder to check")}>
           <button className="input flex items-center gap-2 text-left" onClick={() => setPickDir(true)} type="button">
-            <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
+            <FolderOpen className="h-4 w-4 shrink-0 text-accent-400" />
             <span className="truncate font-mono text-xs">{dir || t("Choose…")}</span>
           </button>
         </Field>
@@ -107,7 +107,7 @@ export function DoctorPage() {
           ) : (
             <>
               {report.fixed && (
-                <div className="flex items-center gap-2 rounded-xl border border-gold-500/20 bg-gold-500/[0.07] px-4 py-3 text-sm text-gold-200">
+                <div className="flex items-center gap-2 rounded-xl border border-accent-500/20 bg-accent-500/[0.07] px-4 py-3 text-sm text-accent-200">
                   <Wrench className="h-4 w-4" /> {t("State repaired — run the download again to re-fetch affected episodes.")}
                 </div>
               )}
@@ -149,7 +149,7 @@ function WorkDirSummary({ report }: { report: DoctorReport }) {
   }
   if (report.workDirRemoved > 0) {
     return (
-      <div className="rounded-xl border border-gold-500/20 bg-gold-500/[0.07] px-4 py-3 text-sm text-gold-200">
+      <div className="rounded-xl border border-accent-500/20 bg-accent-500/[0.07] px-4 py-3 text-sm text-accent-200">
         <p>
           <Wrench className="mr-1.5 inline h-4 w-4" />
           {t("Work folder cleaned: {n} item(s), {size} freed", {
@@ -157,7 +157,7 @@ function WorkDirSummary({ report }: { report: DoctorReport }) {
             size: bytes(report.workDirBytes),
           })}
         </p>
-        <p className="mt-1 truncate font-mono text-xs text-gold-200/50">{report.workDir}</p>
+        <p className="mt-1 truncate font-mono text-xs text-accent-200/50">{report.workDir}</p>
       </div>
     );
   }

@@ -18,67 +18,89 @@
          slate-100 for "loudest" and slate-600 for "quietest" — the meaning is
          the ladder, not the lightness.
 
-     Dark keeps the exact values the app shipped with, so the dark theme is
-     unchanged to the pixel.
+     The values are the bluesky-feedgen admin palette, which this app now
+     shares. Feedgen's five roles map onto the five families here:
+
+       --accent  #2563eb / #6ea8fe  → accent  · the ONE action colour
+       --ok      #157f3d / #4ec27f  → emerald · succeeded, present, connected
+       --warn    #9a6700 / #e0b341  → amber   · paused, retrying, degraded
+       --bad     #b42318 / #ff6b5e  → ember-400 · error TEXT, read at 11–13px
+       --danger  #e02d22 / #ff4d43  → ember-500 · the destructive FILL
+       --muted   #6b6b68 / #9a9a97  → slate-400/500
+
+     The point of the swap is that ORANGE now means one thing. It used to be
+     the brand accent (buttons, active nav, progress, focus rings) AND the
+     warning colour, so "downloading" and "paused" were the same hue at
+     different saturations. Blue is the accent; amber is only ever a warning.
+     There is deliberately no second blue: an informational mark ("dry-run",
+     an INFO log line, an episode already on disk) is the accent blue too,
+     the way feedgen's --chart-stored is. What used to be the one place that
+     needed a second blue — a deferred episode sitting next to a running one —
+     is amber now, because waiting on a retry after an error is a warning.
+
+     Contrast against the card is measured, not guessed. Every text step
+     clears 4.5:1 in both themes except slate-600 (3.59 dark / 4.13 light),
+     which is the deliberate faintest rung — version string, log timestamps,
+     DEBUG level — and is still far above the 2.34:1 the old dark theme had.
      --------------------------------------------------------------------- */
   :root {
     color-scheme: dark;
 
-    --c-ink-950: 7 7 11;
-    --c-ink-900: 11 11 18;
-    --c-ink-850: 16 16 25;
-    --c-ink-800: 21 21 31;
-    --c-ink-750: 26 26 38;
-    --c-ink-700: 34 34 47;
-    --c-ink-600: 44 44 59;
-    --c-ink-500: 58 58 77;
+    /* Surfaces. feedgen: --bg #17181a, --card #1e2022, --line #2c2e31; the
+       rungs between and above them are interpolated. */
+    --c-ink-950: 23 24 26;
+    --c-ink-900: 27 28 31;
+    --c-ink-850: 30 32 34;
+    --c-ink-800: 35 37 39;
+    --c-ink-750: 39 41 44;
+    --c-ink-700: 44 46 49;
+    --c-ink-600: 53 56 59;
+    --c-ink-500: 67 70 74;
 
-    --c-slate-100: 241 245 249;
-    --c-slate-200: 226 232 240;
-    --c-slate-300: 203 213 225;
-    --c-slate-400: 148 163 184;
-    --c-slate-500: 100 116 139;
-    --c-slate-600: 71 85 105;
+    /* Text. feedgen: --fg #e8e8e6, --muted #9a9a97. */
+    --c-slate-100: 232 232 230;
+    --c-slate-200: 214 214 211;
+    --c-slate-300: 186 186 182;
+    --c-slate-400: 154 154 151;
+    --c-slate-500: 138 138 135;
+    --c-slate-600: 118 118 115;
 
-    --c-gold-200: 253 233 168;
-    --c-gold-300: 252 211 77;
-    --c-gold-400: 251 191 36;
-    --c-gold-500: 245 158 11;
-    --c-gold-600: 217 119 6;
+    /* Accent. 500 is feedgen's --accent exactly: it is the button FILL, and
+       what sits on it is text-ink-950, which flips with the theme — dark ink
+       here (7.4:1), white on the light theme (5.0:1). That is feedgen's
+       --on-fill, expressed with a variable this app already had. */
+    --c-accent-200: 207 224 255;
+    --c-accent-300: 168 200 255;
+    --c-accent-400: 139 181 254;
+    --c-accent-500: 110 168 254;
+    --c-accent-600: 74 139 240;
 
-    --c-ember-200: 254 205 211;
-    --c-ember-300: 253 164 175;
-    --c-ember-400: 251 113 133;
-    --c-ember-500: 244 63 94;
+    --c-emerald-100: 211 243 224;
+    --c-emerald-300: 126 215 162;
+    --c-emerald-400: 78 194 127;
+    --c-emerald-500: 53 168 104;
+    --c-emerald-600: 38 138 83;
 
-    --c-emerald-100: 209 250 229;
-    --c-emerald-300: 110 231 183;
-    --c-emerald-400: 52 211 153;
-    --c-emerald-500: 16 185 129;
-    --c-emerald-600: 5 150 105;
+    --c-amber-300: 235 199 102;
+    --c-amber-400: 224 179 65;
+    --c-amber-500: 201 154 43;
 
-    --c-amber-300: 252 211 77;
-    --c-amber-400: 251 191 36;
-    --c-amber-500: 245 158 11;
+    /* 400 is feedgen's --bad and 500 its --danger, and the split is the one
+       feedgen documents: --bad is status text read small, --danger is a shape
+       seen before it is read. Do not collapse them. */
+    --c-ember-200: 255 201 196;
+    --c-ember-300: 255 157 148;
+    --c-ember-400: 255 107 94;
+    --c-ember-500: 255 77 67;
 
-    --c-sky-300: 125 211 252;
-    --c-sky-400: 56 189 248;
-    --c-sky-500: 14 165 233;
-    --c-sky-600: 2 132 199;
-
-    --c-rose-100: 255 228 230;
+    --c-rose-100: 255 217 213;
 
     --c-hairline: 255 255 255;
 
-    --shadow-glow: rgba(245, 158, 11, 0.35);
-    --shadow-inset: rgba(255, 255, 255, 0.03);
-    --shadow-card: rgba(0, 0, 0, 0.8);
-
-    --page-glow-a: rgba(245, 158, 11, 0.1);
-    --page-glow-b: rgba(244, 63, 94, 0.07);
-    --selection: rgba(245, 158, 11, 0.3);
-    --scrollbar: #26262f;
-    --scrollbar-hover: #34344a;
+    --shadow-pop: rgba(0, 0, 0, 0.5);
+    --selection: rgba(110, 168, 254, 0.28);
+    --scrollbar: #35383b;
+    --scrollbar-hover: #43464a;
   }
 
   /* Light values live in one mixin-ish block applied from two selectors: the
@@ -87,125 +109,107 @@
     :root:not([data-theme="dark"]) {
       color-scheme: light;
 
-      --c-ink-950: 246 246 244;
+      --c-ink-950: 251 251 250;
       --c-ink-900: 255 255 255;
       --c-ink-850: 255 255 255;
       --c-ink-800: 255 255 255;
-      --c-ink-750: 240 240 237;
-      --c-ink-700: 228 228 224;
-      --c-ink-600: 213 213 208;
-      --c-ink-500: 185 185 178;
+      --c-ink-750: 244 244 242;
+      --c-ink-700: 226 226 223;
+      --c-ink-600: 211 211 207;
+      --c-ink-500: 191 191 186;
 
-      --c-slate-100: 20 22 26;
-      --c-slate-200: 35 38 44;
-      --c-slate-300: 60 64 72;
-      --c-slate-400: 90 95 105;
-      /* 4.74:1 and 3.89:1 against the page — measured, not guessed. The first
-         pair tried (118/150) came out at 3.88 and 2.58, i.e. a secondary label
-         and a meta line that AA would fail on a white card. */
-      --c-slate-500: 104 110 120;
-      --c-slate-600: 118 124 133;
+      --c-slate-100: 26 26 25;
+      --c-slate-200: 46 46 44;
+      --c-slate-300: 74 74 71;
+      --c-slate-400: 94 94 91;
+      --c-slate-500: 107 107 104;
+      --c-slate-600: 125 125 121;
 
-      --c-gold-200: 124 74 3;
-      --c-gold-300: 138 83 3;
-      --c-gold-400: 161 98 7;
-      --c-gold-500: 180 83 9;
-      --c-gold-600: 146 64 14;
+      /* The light ramp compresses: 300 and 600 are both #1d4ed8, 400 and 500
+         both feedgen's #2563eb. There is only so much room between "legible
+         on white" and "still reads as the accent", and inventing rungs to
+         fill the scale would only have produced two blues nobody can tell
+         apart. Same reason the light emerald/amber rungs repeat. */
+      --c-accent-200: 27 63 175;
+      --c-accent-300: 29 78 216;
+      --c-accent-400: 37 99 235;
+      --c-accent-500: 37 99 235;
+      --c-accent-600: 29 78 216;
 
-      --c-ember-200: 140 26 41;
-      --c-ember-300: 168 31 48;
-      --c-ember-400: 198 42 61;
-      --c-ember-500: 217 45 67;
+      --c-emerald-100: 11 79 39;
+      --c-emerald-300: 17 106 51;
+      --c-emerald-400: 21 127 61;
+      --c-emerald-500: 21 127 61;
+      --c-emerald-600: 17 105 50;
 
-      --c-emerald-100: 10 92 51;
-      --c-emerald-300: 15 122 65;
-      --c-emerald-400: 13 122 63;
-      --c-emerald-500: 11 122 63;
-      --c-emerald-600: 10 107 55;
-
-      --c-amber-300: 138 90 3;
+      --c-amber-300: 133 88 0;
       --c-amber-400: 154 103 0;
-      --c-amber-500: 180 83 9;
+      --c-amber-500: 154 103 0;
 
-      --c-sky-300: 11 111 168;
-      --c-sky-400: 12 127 191;
-      --c-sky-500: 2 132 199;
-      --c-sky-600: 3 105 161;
+      --c-ember-200: 143 26 18;
+      --c-ember-300: 160 31 21;
+      --c-ember-400: 180 35 24;
+      --c-ember-500: 224 45 34;
 
-      --c-rose-100: 136 19 55;
+      --c-rose-100: 143 26 18;
 
-      --c-hairline: 17 20 26;
+      --c-hairline: 26 26 25;
 
-      --shadow-glow: rgba(180, 83, 9, 0.25);
-      --shadow-inset: rgba(255, 255, 255, 0.9);
-      --shadow-card: rgba(23, 25, 35, 0.18);
-
-      --page-glow-a: rgba(245, 158, 11, 0.13);
-      --page-glow-b: rgba(244, 63, 94, 0.08);
-      --selection: rgba(180, 83, 9, 0.22);
-      --scrollbar: #c9c9c2;
-      --scrollbar-hover: #ababa2;
+      --shadow-pop: rgba(23, 25, 35, 0.18);
+      --selection: rgba(37, 99, 235, 0.2);
+      --scrollbar: #d3d3cf;
+      --scrollbar-hover: #bfbfba;
     }
   }
 
   :root[data-theme="light"] {
     color-scheme: light;
 
-    --c-ink-950: 246 246 244;
+    --c-ink-950: 251 251 250;
     --c-ink-900: 255 255 255;
     --c-ink-850: 255 255 255;
     --c-ink-800: 255 255 255;
-    --c-ink-750: 240 240 237;
-    --c-ink-700: 228 228 224;
-    --c-ink-600: 213 213 208;
-    --c-ink-500: 185 185 178;
+    --c-ink-750: 244 244 242;
+    --c-ink-700: 226 226 223;
+    --c-ink-600: 211 211 207;
+    --c-ink-500: 191 191 186;
 
-    --c-slate-100: 20 22 26;
-    --c-slate-200: 35 38 44;
-    --c-slate-300: 60 64 72;
-    --c-slate-400: 90 95 105;
-    --c-slate-500: 104 110 120;
-    --c-slate-600: 118 124 133;
+    --c-slate-100: 26 26 25;
+    --c-slate-200: 46 46 44;
+    --c-slate-300: 74 74 71;
+    --c-slate-400: 94 94 91;
+    --c-slate-500: 107 107 104;
+    --c-slate-600: 125 125 121;
 
-    --c-gold-200: 124 74 3;
-    --c-gold-300: 138 83 3;
-    --c-gold-400: 161 98 7;
-    --c-gold-500: 180 83 9;
-    --c-gold-600: 146 64 14;
+    --c-accent-200: 27 63 175;
+    --c-accent-300: 29 78 216;
+    --c-accent-400: 37 99 235;
+    --c-accent-500: 37 99 235;
+    --c-accent-600: 29 78 216;
 
-    --c-ember-200: 140 26 41;
-    --c-ember-300: 168 31 48;
-    --c-ember-400: 198 42 61;
-    --c-ember-500: 217 45 67;
+    --c-emerald-100: 11 79 39;
+    --c-emerald-300: 17 106 51;
+    --c-emerald-400: 21 127 61;
+    --c-emerald-500: 21 127 61;
+    --c-emerald-600: 17 105 50;
 
-    --c-emerald-100: 10 92 51;
-    --c-emerald-300: 15 122 65;
-    --c-emerald-400: 13 122 63;
-    --c-emerald-500: 11 122 63;
-    --c-emerald-600: 10 107 55;
-
-    --c-amber-300: 138 90 3;
+    --c-amber-300: 133 88 0;
     --c-amber-400: 154 103 0;
-    --c-amber-500: 180 83 9;
+    --c-amber-500: 154 103 0;
 
-    --c-sky-300: 11 111 168;
-    --c-sky-400: 12 127 191;
-    --c-sky-500: 2 132 199;
-    --c-sky-600: 3 105 161;
+    --c-ember-200: 143 26 18;
+    --c-ember-300: 160 31 21;
+    --c-ember-400: 180 35 24;
+    --c-ember-500: 224 45 34;
 
-    --c-rose-100: 136 19 55;
+    --c-rose-100: 143 26 18;
 
-    --c-hairline: 17 20 26;
+    --c-hairline: 26 26 25;
 
-    --shadow-glow: rgba(180, 83, 9, 0.25);
-    --shadow-inset: rgba(255, 255, 255, 0.9);
-    --shadow-card: rgba(23, 25, 35, 0.18);
-
-    --page-glow-a: rgba(245, 158, 11, 0.13);
-    --page-glow-b: rgba(244, 63, 94, 0.08);
-    --selection: rgba(180, 83, 9, 0.22);
-    --scrollbar: #c9c9c2;
-    --scrollbar-hover: #ababa2;
+    --shadow-pop: rgba(23, 25, 35, 0.18);
+    --selection: rgba(37, 99, 235, 0.2);
+    --scrollbar: #d3d3cf;
+    --scrollbar-hover: #bfbfba;
   }
 
   html,
@@ -214,12 +218,23 @@
     height: 100%;
   }
 
+  /* iOS Safari IGNORES overflow-x: hidden on html and body — long-standing and
+     well documented. The remedy is a wrapper element, which is what the app
+     shell in App.tsx carries; this is the belt to that pair of braces, for the
+     browsers that do honour it. Without max-width the declaration alone is not
+     enough either.
+     https://www.codestudy.net/blog/disabling-horizontal-scroll-on-an-iphone-website/ */
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Flat, like feedgen: one background colour, no radial glows. The page used
+     to carry two fixed radial gradients in the brand orange; with the accent
+     no longer orange they had nothing left to be an echo of. */
   body {
     @apply bg-ink-950 text-slate-200 font-sans antialiased;
-    background-image:
-      radial-gradient(900px 500px at 12% -8%, var(--page-glow-a), transparent 60%),
-      radial-gradient(800px 600px at 100% 0%, var(--page-glow-b), transparent 55%);
-    background-attachment: fixed;
   }
 
   ::selection {
@@ -248,14 +263,19 @@
 }
 
 @layer components {
+  /* An opaque surface and a real 1px line, no shadow and no backdrop blur.
+     border-ink-700 rather than border-white/[0.06]: ink-700 IS feedgen's
+     --line, and at 6% the hairline was too faint to draw a card edge on a
+     white page. In the dark theme the two land within a shade of each other,
+     so this is a light-theme fix that costs the dark theme nothing. */
   .card {
-    @apply rounded-2xl border border-white/[0.06] bg-ink-850/80 shadow-card backdrop-blur-sm;
+    @apply rounded-2xl border border-ink-700 bg-ink-850;
   }
 
   .input {
-    @apply w-full rounded-xl border border-white/[0.08] bg-ink-900/70 px-3.5 py-2.5 text-sm text-slate-100
+    @apply w-full rounded-xl border border-ink-700 bg-ink-900 px-3.5 py-2.5 text-sm text-slate-100
       placeholder:text-slate-500 outline-none transition
-      focus:border-gold-500/60 focus:ring-2 focus:ring-gold-500/20;
+      focus:border-accent-500/60 focus:ring-2 focus:ring-accent-500/20;
   }
 
   .label {
@@ -267,8 +287,11 @@
       transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45;
   }
 
+  /* A flat fill, not a gradient with a glow behind it. text-ink-950 is the
+     theme's page colour, so it is dark ink on the dark theme's light blue and
+     white on the light theme's dark blue — feedgen's --on-fill trick. */
   .btn-primary {
-    @apply btn bg-gradient-to-br from-gold-400 to-gold-600 text-ink-950 shadow-glow hover:brightness-110;
+    @apply btn bg-accent-500 text-ink-950 hover:bg-accent-400;
   }
 
   .btn-ghost {
@@ -279,8 +302,10 @@
     @apply btn border border-ember-500/30 bg-ember-500/10 text-ember-400 hover:bg-ember-500/20;
   }
 
+  /* nowrap or it is not a pill: in a narrow column the label wraps onto two
+     lines and the rounded-full turns the whole thing into a circle. */
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium;
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium;
   }
 
   .nav-item {
@@ -289,23 +314,23 @@
   }
 
   .nav-item-active {
-    @apply bg-gold-500/[0.12] text-gold-300 hover:bg-gold-500/[0.16] hover:text-gold-200;
+    @apply bg-accent-500/[0.12] text-accent-300 hover:bg-accent-500/[0.16] hover:text-accent-200;
   }
 
-  /* In-player slider (seek / volume): gold-filled track up to --val, gold thumb. */
+  /* In-player slider (seek / volume): accent-filled track up to --val. */
   .player-range {
     @apply h-1.5 cursor-pointer appearance-none rounded-full outline-none;
     background-image: linear-gradient(
       to right,
-      theme("colors.gold.500") var(--val, 0%),
+      theme("colors.accent.500") var(--val, 0%),
       rgb(var(--c-hairline) / 0.28) var(--val, 0%)
     );
   }
   .player-range::-webkit-slider-thumb {
-    @apply h-3 w-3 cursor-pointer appearance-none rounded-full bg-gold-500 shadow;
+    @apply h-3 w-3 cursor-pointer appearance-none rounded-full bg-accent-500 shadow;
   }
   .player-range::-moz-range-thumb {
-    @apply h-3 w-3 cursor-pointer rounded-full border-0 bg-gold-500;
+    @apply h-3 w-3 cursor-pointer rounded-full border-0 bg-accent-500;
   }
 
   /* Compact dark select used inside the player overlay. */
@@ -322,12 +347,12 @@
     @apply h-4 bg-transparent;
   }
   .range-dual::-webkit-slider-thumb {
-    @apply pointer-events-auto h-4 w-4 cursor-pointer appearance-none rounded-full border-2 border-ink-950 bg-gold-500 shadow;
+    @apply pointer-events-auto h-4 w-4 cursor-pointer appearance-none rounded-full border-2 border-ink-950 bg-accent-500 shadow;
   }
   .range-dual::-moz-range-track {
     @apply h-4 bg-transparent;
   }
   .range-dual::-moz-range-thumb {
-    @apply pointer-events-auto h-4 w-4 cursor-pointer rounded-full border-2 border-ink-950 bg-gold-500;
+    @apply pointer-events-auto h-4 w-4 cursor-pointer rounded-full border-2 border-ink-950 bg-accent-500;
   }
 }

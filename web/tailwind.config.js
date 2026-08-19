@@ -23,10 +23,12 @@ export default {
           300: withAlpha("--c-slate-300"), 400: withAlpha("--c-slate-400"),
           500: withAlpha("--c-slate-500"), 600: withAlpha("--c-slate-600"),
         },
-        gold: {
-          200: withAlpha("--c-gold-200"), 300: withAlpha("--c-gold-300"),
-          400: withAlpha("--c-gold-400"), 500: withAlpha("--c-gold-500"),
-          600: withAlpha("--c-gold-600"),
+        // The ONE action colour: buttons, the active nav item, focus rings,
+        // a running progress bar. Blue, and the only blue — see index.css.
+        accent: {
+          200: withAlpha("--c-accent-200"), 300: withAlpha("--c-accent-300"),
+          400: withAlpha("--c-accent-400"), 500: withAlpha("--c-accent-500"),
+          600: withAlpha("--c-accent-600"),
         },
         ember: {
           200: withAlpha("--c-ember-200"), 300: withAlpha("--c-ember-300"),
@@ -40,10 +42,6 @@ export default {
         amber: {
           300: withAlpha("--c-amber-300"), 400: withAlpha("--c-amber-400"),
           500: withAlpha("--c-amber-500"),
-        },
-        sky: {
-          300: withAlpha("--c-sky-300"), 400: withAlpha("--c-sky-400"),
-          500: withAlpha("--c-sky-500"), 600: withAlpha("--c-sky-600"),
         },
         rose: { 100: withAlpha("--c-rose-100") },
         // "white" is the HAIRLINE/WASH base — border-white/[0.06] and friends.
@@ -68,8 +66,10 @@ export default {
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(245,158,11,0.15), 0 8px 40px -12px var(--shadow-glow)",
-        card: "0 1px 0 0 var(--shadow-inset) inset, 0 12px 40px -20px var(--shadow-card)",
+        // Cards are flat (a 1px --line and nothing else). The one remaining
+        // elevation is for layers that genuinely float over the page — toasts
+        // and the modal — where the shadow is what says "above", not decoration.
+        pop: "0 10px 30px -12px var(--shadow-pop)",
       },
       keyframes: {
         "fade-in": {

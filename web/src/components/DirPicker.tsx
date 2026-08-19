@@ -66,7 +66,7 @@ export function DirPicker({
                 onClick={() => load(d.path)}
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/[0.05]"
               >
-                <Folder className="h-4 w-4 shrink-0 text-gold-400/80" />
+                <Folder className="h-4 w-4 shrink-0 text-accent-400/80" />
                 <span className="truncate">{d.name}</span>
               </button>
             ))

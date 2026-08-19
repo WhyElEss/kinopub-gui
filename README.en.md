@@ -231,7 +231,11 @@ Next to the language switcher in the header sit three buttons: **Auto · Day · 
 
 The choice is stored in the settings **on the server**, so it is the same on every device you open the app from; the last value is also cached in the browser and applied before the first paint, so a reload never flashes the wrong theme.
 
-Both themes are built on CSS variables: components carry no per-theme colour duplicates, and switching is a swap of one variable set. The dark theme keeps exactly the values it always had.
+Both themes are built on CSS variables: components carry no per-theme colour duplicates, and switching is a swap of one variable set.
+
+The values are the bluesky-feedgen admin palette, shared between the two projects, and every colour has exactly one job: **blue** (`#2563eb` by day, `#6ea8fe` by night) is the only accent — buttons, the active nav item, focus, a running download; **green** is success; **orange** is only ever a warning (paused, retrying after an error); **red** is an error. The accent used to be gold, which left orange meaning both "act on this" and "look at this" — "downloading" and "paused" differed only in saturation of one hue. Surfaces are flat: one background colour, a 1px line, no glow and no gradients.
+
+Text contrast against the card is measured rather than eyeballed: every step clears 4.5:1 in both themes except the quietest one (`slate-600`, 3.59:1 dark and 4.13:1 light), which is the version string, log timestamps and the DEBUG level.
 
 <p align="center">
   <img src="docs/screenshots/catalog-light.png" alt="Catalog in the day theme" width="900">

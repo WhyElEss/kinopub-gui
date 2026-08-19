@@ -144,7 +144,7 @@ export function OutputTemplates({
 
       <div className="rounded-lg bg-white/[0.03] px-3 py-2">
         <p className="text-[11px] uppercase tracking-wide text-slate-500">{t("Will be saved as")}</p>
-        <p className="mt-0.5 break-all font-mono text-xs text-gold-300">
+        <p className="mt-0.5 break-all font-mono text-xs text-accent-300">
           {previewPath(outputPath, effectiveDir, effectiveName, values, container === "mp4" ? "mp4" : "mkv")}
         </p>
         {(!dirTemplate.trim() || !nameTemplate.trim()) && (

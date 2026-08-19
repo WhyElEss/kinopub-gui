@@ -68,7 +68,7 @@ export function WatchList() {
     <div className="card p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-200">
-          <Rss className="h-4 w-4 text-gold-300" />
+          <Rss className="h-4 w-4 text-accent-300" />
           {t("Following ({n})", { n: watches.length })}
         </h2>
         <button className="btn-ghost px-3 py-1.5 text-xs" onClick={checkAll} disabled={busy !== null}>

@@ -16,7 +16,7 @@ export function LangSwitcher() {
           onClick={() => setLang(l.id)}
           className={clsx(
             "rounded-full px-2.5 py-1 text-xs font-semibold transition",
-            lang === l.id ? "bg-gold-500 text-ink-950" : "text-slate-400 hover:text-slate-200",
+            lang === l.id ? "bg-accent-500 text-ink-950" : "text-slate-400 hover:text-slate-200",
           )}
         >
           {l.label}

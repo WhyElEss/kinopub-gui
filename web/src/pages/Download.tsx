@@ -114,7 +114,7 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
 
   const layoutBtn = (active: boolean) =>
     active
-      ? "rounded-lg bg-gold-500/15 px-2.5 py-1 font-medium text-gold-300"
+      ? "rounded-lg bg-accent-500/15 px-2.5 py-1 font-medium text-accent-300"
       : "rounded-lg px-2.5 py-1 text-slate-400 hover:text-slate-200";
 
   const toggleEpisode = (key: string) =>
@@ -207,7 +207,7 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
         </p>
       </header>
 
-      <div className="card flex items-start gap-3 border-gold-500/20 bg-gold-500/[0.06] p-4 text-sm text-gold-200">
+      <div className="card flex items-start gap-3 border-accent-500/20 bg-accent-500/[0.06] p-4 text-sm text-accent-200">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
           {t("kino.pub is often unavailable without a VPN. If requests hang or time out, enable a VPN or set a proxy below.")}
@@ -216,7 +216,7 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
 
       {!kpauth.loggedIn && (
         <div className="card flex flex-wrap items-center gap-3 border-white/[0.08] p-4 text-sm text-slate-300">
-          <KeyRound className="h-4 w-4 shrink-0 text-gold-400" />
+          <KeyRound className="h-4 w-4 shrink-0 text-accent-400" />
           <span className="min-w-0 flex-1">
             {t("Sign in to kino.pub (Settings) to resolve and download titles.")}
           </span>
@@ -262,7 +262,7 @@ export function DownloadPage({ onStarted, onSignIn }: { onStarted: () => void; o
               onClick={() => setPickDir(true)}
               type="button"
             >
-              <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
+              <FolderOpen className="h-4 w-4 shrink-0 text-accent-400" />
               <span className="truncate font-mono text-xs">{form.outputPath || t("Choose…")}</span>
             </button>
           </Field>

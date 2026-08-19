@@ -59,7 +59,7 @@ export function AudioMenuModal({ job }: { job: JobView }) {
       onClose={() => submit([])}
       title={
         <span className="flex items-center gap-2">
-          <AudioLines className="h-5 w-5 text-gold-400" /> {t("Choose audio tracks")}
+          <AudioLines className="h-5 w-5 text-accent-400" /> {t("Choose audio tracks")}
         </span>
       }
       wide
@@ -67,7 +67,7 @@ export function AudioMenuModal({ job }: { job: JobView }) {
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3 text-sm">
           <span className="truncate text-slate-400">{job.title || job.url}</span>
-          <span className="chip border-gold-500/30 bg-gold-500/10 text-gold-300">
+          <span className="chip border-accent-500/30 bg-accent-500/10 text-accent-300">
             <Clock className="h-3.5 w-3.5" /> {remaining}s
           </span>
         </div>
@@ -108,7 +108,7 @@ export function AudioMenuModal({ job }: { job: JobView }) {
                 key={tr.Index}
                 className={`group flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 transition ${
                   on
-                    ? "border-gold-500/40 bg-gold-500/[0.08]"
+                    ? "border-accent-500/40 bg-accent-500/[0.08]"
                     : "border-white/[0.06] bg-ink-900/40 hover:border-white/[0.12]"
                 }`}
               >
@@ -119,7 +119,7 @@ export function AudioMenuModal({ job }: { job: JobView }) {
                 >
                   <span
                     className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${
-                      on ? "border-gold-500 bg-gold-500 text-ink-950" : "border-white/20"
+                      on ? "border-accent-500 bg-accent-500 text-ink-950" : "border-white/20"
                     }`}
                   >
                     {on && <Check className="h-3.5 w-3.5" />}
@@ -134,7 +134,7 @@ export function AudioMenuModal({ job }: { job: JobView }) {
                 <button
                   type="button"
                   onClick={() => only(tr.Index)}
-                  className="shrink-0 rounded-md border border-white/[0.06] px-2 py-1 text-xs text-slate-500 transition hover:border-gold-500/30 hover:bg-white/[0.06] hover:text-gold-300"
+                  className="shrink-0 rounded-md border border-white/[0.06] px-2 py-1 text-xs text-slate-500 transition hover:border-accent-500/30 hover:bg-white/[0.06] hover:text-accent-300"
                   title={t("Only this")}
                 >
                   {t("Only this")}

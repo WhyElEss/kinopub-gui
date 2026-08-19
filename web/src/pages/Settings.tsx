@@ -101,8 +101,8 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <header className="flex items-start justify-between gap-3">
-        <div>
+      <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-100">{t("Settings")}</h1>
           <p className="mt-1 text-sm text-slate-400">{t("Changes are saved automatically.")}</p>
         </div>
@@ -124,7 +124,7 @@ export function SettingsPage() {
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("TV series")}</p>
             <Field label={t("Output folder")}>
               <button className="input flex items-center gap-2 text-left" onClick={() => setPickOutput(true)} type="button">
-                <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
+                <FolderOpen className="h-4 w-4 shrink-0 text-accent-400" />
                 <span className="truncate font-mono text-xs">{form.outputPath || t("Choose…")}</span>
               </button>
             </Field>
@@ -143,7 +143,7 @@ export function SettingsPage() {
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("Films")}</p>
             <Field label={t("Output folder")}>
               <button className="input flex items-center gap-2 text-left" onClick={() => setPickMovieOutput(true)} type="button">
-                <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
+                <FolderOpen className="h-4 w-4 shrink-0 text-accent-400" />
                 <span className="truncate font-mono text-xs">{form.movieOutputPath || form.outputPath || t("Choose…")}</span>
               </button>
               {/* Empty means "wherever series go", so say which folder that is
@@ -181,7 +181,7 @@ export function SettingsPage() {
             )}
           >
             <button className="input flex items-center gap-2 text-left" onClick={() => setPickWork(true)} type="button">
-              <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
+              <FolderOpen className="h-4 w-4 shrink-0 text-accent-400" />
               <span className="truncate font-mono text-xs">
                 {form.workDir || t("Next to the finished file")}
               </span>
@@ -271,8 +271,8 @@ export function SettingsPage() {
       </div>
 
       <div className="card space-y-3 p-5">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <div className="min-w-0">
             <h2 className="text-sm font-semibold text-slate-200">{t("Extra library folders")}</h2>
             <p className="text-xs text-slate-500">{t("Scanned in addition to the output folder.")}</p>
           </div>
@@ -286,7 +286,7 @@ export function SettingsPage() {
           <div className="space-y-1.5">
             {libDirs.map((d) => (
               <div key={d} className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-ink-900/40 px-3 py-2">
-                <FolderOpen className="h-4 w-4 shrink-0 text-gold-400/80" />
+                <FolderOpen className="h-4 w-4 shrink-0 text-accent-400/80" />
                 <span className="min-w-0 flex-1 truncate font-mono text-xs text-slate-300">{d}</span>
                 <button
                   className="rounded-md p-1 text-slate-500 hover:bg-white/[0.06] hover:text-ember-400"
@@ -387,7 +387,7 @@ function UpdateCard() {
   return (
     <div className="card p-5">
       <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-200">
-        <ArrowUpCircle className="h-4 w-4 text-gold-400" /> {t("Software update")}
+        <ArrowUpCircle className="h-4 w-4 text-accent-400" /> {t("Software update")}
       </h2>
       <div className="space-y-3 text-sm">
         <div className="flex items-center justify-between gap-3">
@@ -396,9 +396,9 @@ function UpdateCard() {
         </div>
 
         {update?.updateAvailable && (
-          <div className="space-y-3 rounded-lg border border-gold-500/25 bg-gold-500/[0.06] p-3">
+          <div className="space-y-3 rounded-lg border border-accent-500/25 bg-accent-500/[0.06] p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-medium text-gold-200">
+              <span className="font-medium text-accent-200">
                 {t("New version {v} available", { v: update.latest || "" })}
               </span>
               {update.releaseUrl && (
@@ -442,7 +442,7 @@ function FFmpegInfo({ ffmpeg }: { ffmpeg: FFmpegStatus }) {
   return (
     <div className="card p-5">
       <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-200">
-        <Server className="h-4 w-4 text-gold-400" /> {t("System")}
+        <Server className="h-4 w-4 text-accent-400" /> {t("System")}
       </h2>
       <div className="space-y-2 text-sm">
         <Row label="ffmpeg" ok={ffmpeg.ffmpegFound} detail={ffmpeg.ffmpegFound ? ffmpeg.ffmpegVersion || ffmpeg.ffmpegPath : t("not found on PATH")} />

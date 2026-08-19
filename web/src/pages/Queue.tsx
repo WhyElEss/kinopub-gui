@@ -24,14 +24,17 @@ export function QueuePage({ onNew }: { onNew: () => void }) {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <header className="flex items-center justify-between">
-        <div>
+      {/* wrap + gap, not a rigid two-column row: on a phone the two ghost
+          buttons are wider than what is left beside the title, and without
+          this they were pushed off the right edge of the screen. */}
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-100">{t("Queue")}</h1>
           <p className="mt-1 text-sm text-slate-400">
             {t("{n} active · {m} finished", { n: active.length, m: finished.length })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button className="btn-ghost" onClick={onNew} title={t("Download by a kino.pub link")}>
             <Link2 className="h-4 w-4" /> {t("Advanced download")}
           </button>

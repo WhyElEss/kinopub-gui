@@ -10,7 +10,7 @@ export function Toasts() {
         <div
           key={t.id}
           className={clsx(
-            "pointer-events-auto flex animate-fade-in items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-card backdrop-blur",
+            "pointer-events-auto flex animate-fade-in items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-pop backdrop-blur",
             t.kind === "success" && "border-emerald-500/25 bg-emerald-500/[0.12] text-emerald-100",
             t.kind === "error" && "border-ember-500/30 bg-ember-500/[0.14] text-rose-100",
             t.kind === "info" && "border-white/10 bg-ink-800/90 text-slate-200",

@@ -382,7 +382,7 @@ export function TitleDetail({
           {/* Озвучки */}
           <div>
             <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-200">
-              <Mic2 className="h-4 w-4 text-gold-400" /> {t("Voiceover")}
+              <Mic2 className="h-4 w-4 text-accent-400" /> {t("Voiceover")}
               <span className="text-xs font-normal text-slate-500">
                 {allAudioOn
                   ? t("(all selected)")
@@ -393,14 +393,14 @@ export function TitleDetail({
               {detail.audios.length > 1 && (
                 <button
                   onClick={toggleAllAudio}
-                  className="ml-auto text-xs font-normal text-gold-300 hover:text-gold-200"
+                  className="ml-auto text-xs font-normal text-accent-300 hover:text-accent-200"
                 >
                   {allAudioOn ? t("Deselect all") : t("Select all")}
                 </button>
               )}
             </h3>
             {audioPrefMissing && detail.audios.length > 0 && (
-              <p className="mb-2 text-xs text-gold-300/90">
+              <p className="mb-2 text-xs text-accent-300/90">
                 {t("Your last voiceover isn't available here — pick another.")}
               </p>
             )}
@@ -416,7 +416,7 @@ export function TitleDetail({
                       onClick={() => toggleAudio(a.label)}
                       className={`chip transition ${
                         on
-                          ? "border-gold-500/40 bg-gold-500/[0.14] text-gold-200"
+                          ? "border-accent-500/40 bg-accent-500/[0.14] text-accent-200"
                           : "text-slate-300 hover:bg-white/[0.06]"
                       }`}
                     >
@@ -442,17 +442,17 @@ export function TitleDetail({
                 <div className="flex gap-2 text-xs">
                   {downloaded.size > 0 && (
                     <button
-                      className="text-slate-400 hover:text-sky-300"
+                      className="text-slate-400 hover:text-accent-300"
                       title={t("Select only episodes not yet downloaded")}
                       onClick={() => setEpSel(new Set(allEpKeys.filter((k) => !downloaded.has(k))))}
                     >
                       {t("Only missing")}
                     </button>
                   )}
-                  <button className="text-slate-400 hover:text-gold-300" onClick={() => setEpSel(new Set(allEpKeys))}>
+                  <button className="text-slate-400 hover:text-accent-300" onClick={() => setEpSel(new Set(allEpKeys))}>
                     {t("Select all")}
                   </button>
-                  <button className="text-slate-400 hover:text-gold-300" onClick={() => setEpSel(new Set())}>
+                  <button className="text-slate-400 hover:text-accent-300" onClick={() => setEpSel(new Set())}>
                     {t("Deselect all")}
                   </button>
                 </div>
@@ -474,14 +474,14 @@ export function TitleDetail({
                           title={t("Toggle season")}
                           className={`grid h-4 w-4 shrink-0 place-items-center rounded border transition ${
                             allSel
-                              ? "border-gold-500 bg-gold-500"
+                              ? "border-accent-500 bg-accent-500"
                               : someSel
-                                ? "border-gold-500 bg-gold-500/30"
+                                ? "border-accent-500 bg-accent-500/30"
                                 : "border-white/25 hover:border-white/40"
                           }`}
                         >
                           {allSel && <Check className="h-3 w-3 text-ink-950" strokeWidth={3} />}
-                          {someSel && <span className="h-[2px] w-2 rounded bg-gold-300" />}
+                          {someSel && <span className="h-[2px] w-2 rounded bg-accent-300" />}
                         </button>
                         <button
                           onClick={() => toggleSeasonOpen(s.number)}
@@ -492,7 +492,7 @@ export function TitleDetail({
                         </button>
                         <span className="flex items-center gap-2 text-xs text-slate-500">
                           {dled > 0 && (
-                            <span className="inline-flex items-center gap-0.5 text-sky-400/70" title={t("Downloaded")}>
+                            <span className="inline-flex items-center gap-0.5 text-accent-400/70" title={t("Downloaded")}>
                               <HardDrive className="h-3 w-3" /> {dled}
                             </span>
                           )}
@@ -501,7 +501,7 @@ export function TitleDetail({
                               <Eye className="h-3 w-3" /> {watched}
                             </span>
                           )}
-                          <span className={allSel ? "text-gold-300" : ""}>
+                          <span className={allSel ? "text-accent-300" : ""}>
                             {sel}/{total}
                           </span>
                         </span>
@@ -517,7 +517,7 @@ export function TitleDetail({
                               <div
                                 key={key}
                                 className={`group flex items-center text-sm transition ${
-                                  on ? "bg-gold-500/[0.10]" : "hover:bg-white/[0.03]"
+                                  on ? "bg-accent-500/[0.10]" : "hover:bg-white/[0.03]"
                                 }`}
                               >
                                 <button
@@ -527,7 +527,7 @@ export function TitleDetail({
                                 >
                                   <span
                                     className={`grid h-6 w-7 shrink-0 place-items-center rounded text-xs font-semibold ${
-                                      on ? "bg-gold-500/25 text-gold-200" : "bg-white/[0.05] text-slate-400"
+                                      on ? "bg-accent-500/25 text-accent-200" : "bg-white/[0.05] text-slate-400"
                                     }`}
                                   >
                                     {e.episode}
@@ -537,19 +537,19 @@ export function TitleDetail({
                                   </span>
                                   {dl && (
                                     <span
-                                      className="shrink-0 text-sky-400/80"
+                                      className="shrink-0 text-accent-400/80"
                                       title={dlRes ? t("Downloaded · {res}", { res: dlRes }) : t("Downloaded")}
                                     >
                                       <HardDrive className="h-3.5 w-3.5" />
                                     </span>
                                   )}
                                   {e.watched && <Eye className="h-3.5 w-3.5 shrink-0 text-emerald-500/70" />}
-                                  {on && <Check className="h-3.5 w-3.5 shrink-0 text-gold-300" />}
+                                  {on && <Check className="h-3.5 w-3.5 shrink-0 text-accent-300" />}
                                 </button>
                                 <button
                                   onClick={() => setPlaying({ season: e.season, episode: e.episode })}
                                   title={t("Watch")}
-                                  className="mr-2 shrink-0 rounded-md p-1.5 text-gold-400/80 transition hover:bg-gold-500/15 hover:text-gold-200"
+                                  className="mr-2 shrink-0 rounded-md p-1.5 text-accent-400/80 transition hover:bg-accent-500/15 hover:text-accent-200"
                                 >
                                   <Play className="h-4 w-4" />
                                 </button>
@@ -584,7 +584,7 @@ export function TitleDetail({
               <div className="space-y-3">
                 <Field label={t("Output folder")}>
                   <button className="input flex items-center gap-2 text-left" onClick={() => setPickDir(true)} type="button">
-                    <FolderOpen className="h-4 w-4 shrink-0 text-gold-400" />
+                    <FolderOpen className="h-4 w-4 shrink-0 text-accent-400" />
                     <span className="truncate font-mono text-xs">{outputPath || t("Choose…")}</span>
                   </button>
                 </Field>
@@ -622,7 +622,7 @@ export function TitleDetail({
             </button>
             {isSerial && (
               <button
-                className={clsx("btn-ghost", followed && "text-gold-300")}
+                className={clsx("btn-ghost", followed && "text-accent-300")}
                 onClick={toggleFollow}
                 disabled={following}
                 title={

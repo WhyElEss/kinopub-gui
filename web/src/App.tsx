@@ -11,6 +11,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PlugZap,
+  Settings as SettingsIcon,
   ShieldAlert,
   Stethoscope,
   Unplug,
@@ -39,6 +40,15 @@ const NAV: { id: Page; label: string; icon: any }[] = [
   { id: "doctor", label: "Doctor", icon: Stethoscope },
 ];
 
+// On a phone the sidebar is gone, and with it the profile card and the system
+// footer — the only two ways into Settings. That left no route to sign in, to
+// install ffmpeg, or to change anything at all from a phone. Settings is a tab
+// of its own there, and it carries the dot those two panels would have shown.
+const MOBILE_NAV: { id: Page; label: string; icon: any }[] = [
+  ...NAV,
+  { id: "settings", label: "Settings", icon: SettingsIcon },
+];
+
 export default function App() {
   const { connected, version, jobs, kpauth, kpUser, kpUserError, ffmpeg, update } = useApp();
   const { t } = useI18n();
@@ -60,6 +70,14 @@ export default function App() {
 
   const activeJobs = jobs.filter((j) => !["completed", "failed", "canceled"].includes(j.status)).length;
   const audioJob = jobs.find((j) => j.pendingAudio);
+  // The sidebar says these things in words; the phone has one dot for them.
+  // Red is "nothing works until you go there" — signed out, or no ffmpeg.
+  // Blue is merely something new to look at.
+  const settingsAlert: "attention" | "info" | null = !kpauth.loggedIn || !ffmpeg.ffmpegFound
+    ? "attention"
+    : update?.updateAvailable
+      ? "info"
+      : null;
 
   return (
     <div className="flex min-h-screen">
@@ -92,9 +110,9 @@ export default function App() {
               {!collapsed && <span className="flex-1 text-left">{t(n.label)}</span>}
               {n.id === "queue" && activeJobs > 0 &&
                 (collapsed ? (
-                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-gold-500" />
+                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-accent-500" />
                 ) : (
-                  <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-gold-500 px-1.5 text-[10px] font-bold leading-none text-ink-950">
+                  <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-accent-500 px-1.5 text-[10px] font-bold leading-none text-ink-950">
                     {activeJobs}
                   </span>
                 ))}
@@ -117,8 +135,9 @@ export default function App() {
         />
       </aside>
 
-      {/* Main */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* Main. overflow-x-hidden here and not only on body: iOS Safari ignores
+          it on html/body, and a wrapper element is the documented remedy. */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
         <header className="sticky top-0 z-30 flex transform-gpu items-center gap-3 border-b border-white/[0.06] bg-ink-950/70 px-4 py-3 backdrop-blur-md md:px-8">
           {/* Mobile nav */}
           <div className="flex items-center gap-1 md:hidden">
@@ -128,7 +147,7 @@ export default function App() {
             {update?.updateAvailable && (
               <button
                 onClick={() => navigate("settings")}
-                className="chip border-gold-500/30 bg-gold-500/[0.12] text-gold-300 hover:bg-gold-500/[0.2]"
+                className="chip border-accent-500/30 bg-accent-500/[0.12] text-accent-300 hover:bg-accent-500/[0.2]"
                 title={t("A new version is available")}
               >
                 <ArrowUpCircle className="h-3.5 w-3.5" />
@@ -141,24 +160,40 @@ export default function App() {
           </div>
         </header>
 
-        {/* Mobile tab bar */}
-        <nav className="flex items-center gap-1 overflow-x-auto border-b border-white/[0.06] px-3 py-2 md:hidden">
-          {NAV.map((n) => (
+        {/* Mobile tab bar. An equal-width grid rather than a horizontal
+            scroller: with five tabs the scroller put the last one off-screen,
+            which is exactly how Settings stayed unreachable. Icon over label
+            fits all five inside 375pt with room to spare. */}
+        <nav className="grid grid-cols-5 border-b border-white/[0.06] px-2 py-1.5 md:hidden">
+          {MOBILE_NAV.map((n) => (
             <button
               key={n.id}
               onClick={() => navigate(n.id)}
               className={clsx(
-                "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm",
-                page === n.id ? "bg-gold-500/[0.14] text-gold-300" : "text-slate-400",
+                "relative flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-medium leading-none transition",
+                page === n.id ? "bg-accent-500/[0.14] text-accent-300" : "text-slate-400",
               )}
             >
-              <n.icon className="h-4 w-4" />
-              {t(n.label)}
+              <n.icon className="h-[18px] w-[18px] shrink-0" />
+              <span className="max-w-full truncate">{t(n.label)}</span>
+              {n.id === "queue" && activeJobs > 0 && (
+                <span className="absolute right-1.5 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent-500 px-1 text-[9px] font-bold leading-none text-ink-950">
+                  {activeJobs}
+                </span>
+              )}
+              {n.id === "settings" && settingsAlert && (
+                <span
+                  className={clsx(
+                    "absolute right-2 top-1.5 h-2 w-2 rounded-full",
+                    settingsAlert === "attention" ? "bg-ember-500" : "bg-accent-500",
+                  )}
+                />
+              )}
             </button>
           ))}
         </nav>
 
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+        <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">
           {page === "discover" && (
             <DiscoverPage onStarted={() => navigate("queue")} onOpenSettings={() => navigate("settings")} />
           )}
@@ -182,7 +217,7 @@ export default function App() {
 // favicon.svg the browser tab uses and that package-macos.sh bakes into
 // AppIcon.icns. Stays visible even when the sidebar is collapsed.
 function BrandMark() {
-  return <img src="./favicon.svg" alt="kino.pub" className="h-9 w-9 shrink-0 rounded-xl shadow-glow" />;
+  return <img src="./favicon.svg" alt="kino.pub" className="h-9 w-9 shrink-0 rounded-xl" />;
 }
 
 function Brand({ compact }: { compact?: boolean }) {
@@ -223,7 +258,7 @@ function ProfileCard({
         onClick={onClick}
         title={collapsed ? t("Sign in in Settings") : undefined}
         className={clsx(
-          "mb-2 flex items-center gap-2.5 rounded-xl border border-gold-500/25 bg-gold-500/[0.08] p-2.5 text-gold-300 transition hover:bg-gold-500/[0.16]",
+          "mb-2 flex items-center gap-2.5 rounded-xl border border-accent-500/25 bg-accent-500/[0.08] p-2.5 text-accent-300 transition hover:bg-accent-500/[0.16]",
           collapsed && "justify-center",
         )}
       >
@@ -232,9 +267,9 @@ function ProfileCard({
           <>
             <span className="min-w-0 flex-1 text-left">
               <span className="block text-sm font-semibold leading-tight">{t("Sign in")}</span>
-              <span className="block text-[11px] font-medium leading-tight text-gold-300/70">{t("in Settings")}</span>
+              <span className="block text-[11px] font-medium leading-tight text-accent-300/70">{t("in Settings")}</span>
             </span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-gold-300/60" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-accent-300/60" />
           </>
         )}
       </button>
@@ -376,9 +411,7 @@ function SystemFooter({
           <span
             className={clsx(
               "h-1.5 w-1.5 rounded-full",
-              connected
-                ? "bg-emerald-400 shadow-[0_0_6px_1px_rgba(52,211,153,0.6)]"
-                : "bg-amber-400 animate-pulse-soft",
+              connected ? "bg-emerald-400" : "bg-amber-400 animate-pulse-soft",
             )}
           />
         </div>

@@ -39,7 +39,7 @@ export function KinopubLogin() {
   return (
     <div className="card p-5">
       <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-200">
-        <KeyRound className="h-4 w-4 text-gold-400" /> {t("kino.pub account (API)")}
+        <KeyRound className="h-4 w-4 text-accent-400" /> {t("kino.pub account (API)")}
       </h2>
       <p className="mb-4 text-xs text-slate-500">
         {t("Sign in once with a device code to search the catalog, preview voiceovers, and download titles.")}
@@ -55,12 +55,12 @@ export function KinopubLogin() {
           </button>
         </div>
       ) : kpauth.pending && kpauth.userCode ? (
-        <div className="space-y-3 rounded-xl border border-gold-500/25 bg-gold-500/[0.06] p-4">
+        <div className="space-y-3 rounded-xl border border-accent-500/25 bg-accent-500/[0.06] p-4">
           <p className="text-sm text-slate-300">
             {t("Open the link and enter this code:")}
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <code className="select-all rounded-lg bg-ink-950/60 px-4 py-2 font-mono text-2xl font-bold tracking-[0.3em] text-gold-300">
+            <code className="select-all rounded-lg bg-ink-950/60 px-4 py-2 font-mono text-2xl font-bold tracking-[0.3em] text-accent-300">
               {kpauth.userCode}
             </code>
             <a

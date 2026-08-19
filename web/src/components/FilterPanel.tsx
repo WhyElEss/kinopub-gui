@@ -73,7 +73,7 @@ export function FilterPanel({
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-white/[0.03]"
       >
-        <SlidersHorizontal className="h-4 w-4 text-gold-400" /> {t("Filter")}
+        <SlidersHorizontal className="h-4 w-4 text-accent-400" /> {t("Filter")}
         {open ? <ChevronUp className="ml-auto h-4 w-4" /> : <ChevronDown className="ml-auto h-4 w-4" />}
       </button>
       {open && (
@@ -93,7 +93,7 @@ export function FilterPanel({
           <div className="flex flex-wrap items-center gap-5">
             <Check label={t("AC3 sound")} checked={value.ac3} onChange={(v) => set("ac3", v)} />
             <Check label={t("With subtitles")} checked={value.subtitles} onChange={(v) => set("subtitles", v)} />
-            <button onClick={onReset} className="ml-auto flex items-center gap-1.5 text-xs text-slate-400 hover:text-gold-300">
+            <button onClick={onReset} className="ml-auto flex items-center gap-1.5 text-xs text-slate-400 hover:text-accent-300">
               <RotateCcw className="h-3.5 w-3.5" /> {t("Reset filters")}
             </button>
           </div>
@@ -152,14 +152,14 @@ function Range({
     <div>
       <div className="mb-2.5 flex items-center justify-between">
         <label className="label mb-0">{label}</label>
-        <span className="rounded bg-gold-500/15 px-1.5 py-0.5 font-mono text-xs text-gold-300">
+        <span className="rounded bg-accent-500/15 px-1.5 py-0.5 font-mono text-xs text-accent-300">
           {from} – {to}
         </span>
       </div>
       <div className="relative h-4">
         <div className="absolute top-1/2 h-1.5 w-full -translate-y-1/2 rounded-full bg-white/10" />
         <div
-          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-gold-500/70"
+          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-accent-500/70"
           style={{ left: `${pct(from)}%`, right: `${100 - pct(to)}%` }}
         />
         <input
@@ -188,7 +188,7 @@ function Range({
 function Check({ label, checked, onChange }: { label: ReactNode; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 accent-gold-500" />
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 accent-accent-500" />
       {label}
     </label>
   );

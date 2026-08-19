@@ -27,8 +27,8 @@ function StatusBadge({ status }: { status: JobView["status"] }) {
   const { t } = useI18n();
   const map: Record<JobView["status"], { label: string; cls: string; icon: any; spin?: boolean }> = {
     queued: { label: "Queued", cls: "border-white/10 bg-white/[0.04] text-slate-400", icon: Clock },
-    resolving: { label: "Resolving", cls: "border-gold-500/30 bg-gold-500/10 text-gold-300", icon: Loader2, spin: true },
-    running: { label: "Downloading", cls: "border-gold-500/30 bg-gold-500/10 text-gold-300", icon: Loader2, spin: true },
+    resolving: { label: "Resolving", cls: "border-accent-500/30 bg-accent-500/10 text-accent-300", icon: Loader2, spin: true },
+    running: { label: "Downloading", cls: "border-accent-500/30 bg-accent-500/10 text-accent-300", icon: Loader2, spin: true },
     completed: { label: "Completed", cls: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300", icon: CheckCircle2 },
     failed: { label: "Failed", cls: "border-ember-500/30 bg-ember-500/10 text-ember-400", icon: XCircle },
     canceled: { label: "Canceled", cls: "border-white/10 bg-white/[0.04] text-slate-400", icon: Ban },
@@ -43,6 +43,10 @@ function StatusBadge({ status }: { status: JobView["status"] }) {
   );
 }
 
+// Deferred is amber, not a second blue. It sits directly above or below a
+// running episode in the same list, and "waiting to retry after an error" is a
+// warning — the same thing paused-by-the-engine would be. Blue is reserved for
+// the one episode actually downloading.
 function epVariant(state: EpisodeView["state"]) {
   switch (state) {
     case "completed":
@@ -50,11 +54,11 @@ function epVariant(state: EpisodeView["state"]) {
     case "failed":
       return "rose" as const;
     case "deferred":
-      return "blue" as const;
+      return "amber" as const;
     case "paused":
       return "slate" as const;
     default:
-      return "gold" as const;
+      return "accent" as const;
   }
 }
 
@@ -116,14 +120,19 @@ function EpisodeRow({
   const cancelEp = act(() => api.cancelEpisode(jobId, ep.season, ep.episode), t("{ep} canceled — the rest keep downloading", { ep: ep.key }));
 
   return (
-    <div className="rounded-xl border border-white/[0.05] bg-ink-850 px-3 py-2.5">
+    // min-w-0 because this row is a GRID item, and a grid item's min-width
+    // resolves to auto — its min-content width, which a truncating title
+    // inside does NOT shrink the way it would inside a flex item. A long
+    // episode name made the row 657px wide inside a 368px track; the card's
+    // overflow-hidden then cut it off. The single most load-bearing class here.
+    <div className="min-w-0 rounded-xl border border-white/[0.05] bg-ink-850 px-3 py-2.5">
       <div className="flex items-center gap-3">
         <span
           className={clsx(
             "grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[11px] font-semibold",
             ep.state === "completed" && "bg-emerald-500/15 text-emerald-300",
             ep.state === "failed" && "bg-ember-500/15 text-ember-400",
-            ep.state === "deferred" && "bg-sky-500/15 text-sky-300",
+            ep.state === "deferred" && "bg-amber-500/15 text-amber-300",
             ep.state === "paused" && "bg-amber-500/15 text-amber-300",
             (ep.state === "running" || ep.state === "pending") && "bg-white/[0.05] text-slate-400",
           )}
@@ -144,12 +153,18 @@ function EpisodeRow({
         </span>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-sm text-slate-200">
+          {/* flex-wrap, and a real min-width on the title rather than the 0 that
+              truncate gives a flex item: the buttons then push themselves onto
+              a second line instead of the title collapsing to nothing while
+              they still overflow. Measured on a 402pt iPhone, the four-button
+              running state needed 309px of the 270px this row has, and the
+              card's overflow-hidden was quietly cutting the rest off. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+            <span className="min-w-[8rem] flex-1 truncate text-sm text-slate-200">
               <span className="font-mono text-xs text-slate-500">{ep.key}</span>{" "}
               {ep.title || ""}
             </span>
-            <span className="flex shrink-0 items-center gap-2">
+            <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
               {canResumeEp && (
                 <button
                   className="btn-ghost px-2 py-0.5 text-amber-300"
@@ -157,7 +172,8 @@ function EpisodeRow({
                   disabled={busy}
                   title={t("Resume this episode")}
                 >
-                  <Play className="h-3.5 w-3.5" /> {t("Resume")}
+                  <Play className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{t("Resume")}</span>
                 </button>
               )}
               {canPauseEp && (
@@ -167,27 +183,30 @@ function EpisodeRow({
                   disabled={busy}
                   title={t("Pause this episode — hold it in the queue")}
                 >
-                  <Pause className="h-3.5 w-3.5" /> {t("Pause")}
+                  <Pause className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{t("Pause")}</span>
                 </button>
               )}
               {canPrioritize && (
                 <button
-                  className="btn-ghost px-2 py-0.5 text-gold-300"
+                  className="btn-ghost px-2 py-0.5 text-accent-300"
                   onClick={prioritizeEp}
                   disabled={busy}
                   title={t("Download this episode next")}
                 >
-                  <ArrowUp className="h-3.5 w-3.5" /> {t("Next")}
+                  <ArrowUp className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{t("Next")}</span>
                 </button>
               )}
               {canRetryEp && (
                 <button
-                  className="btn-ghost px-2 py-0.5 text-gold-300"
+                  className="btn-ghost px-2 py-0.5 text-accent-300"
                   onClick={retryEp}
                   disabled={busy}
                   title={t("Retry this episode now — without waiting for the rest")}
                 >
-                  <RotateCw className="h-3.5 w-3.5" /> {t("Retry")}
+                  <RotateCw className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{t("Retry")}</span>
                 </button>
               )}
               {canCancelEp && (
@@ -218,10 +237,10 @@ function EpisodeRow({
                 {bytes(ep.bytes)} / {ep.totalApprox ? "~" : ""}{bytes(ep.total)}
               </span>
             )}
-            {active && ep.speedBps > 0 && <span className="text-gold-400/90">{speed(ep.speedBps)}</span>}
+            {active && ep.speedBps > 0 && <span className="text-accent-400/90">{speed(ep.speedBps)}</span>}
             {active && ep.etaSeconds > 0 && <span>{t("ETA")} {eta(ep.etaSeconds, t)}</span>}
             {ep.state === "deferred" && (
-              <span className="text-sky-400">{t("retrying (attempt {n})", { n: ep.attempts })}</span>
+              <span className="text-amber-400">{t("retrying (attempt {n})", { n: ep.attempts })}</span>
             )}
             {ep.state === "paused" && <span className="text-amber-400">{t("paused")}</span>}
             {ep.error && (ep.state === "failed" || ep.state === "deferred") && (
@@ -377,7 +396,7 @@ export function JobCard({
                   {job.title || job.url}
                 </h3>
                 {job.dryRun && (
-                  <span className="chip border-sky-500/25 bg-sky-500/10 text-sky-300">{t("dry-run")}</span>
+                  <span className="chip border-accent-500/25 bg-accent-500/10 text-accent-300">{t("dry-run")}</span>
                 )}
               </div>
               <p className="mt-0.5 truncate font-mono text-xs text-slate-500">{job.url}</p>
@@ -411,14 +430,14 @@ export function JobCard({
                     ? "green"
                     : job.status === "paused"
                       ? "slate"
-                      : "gold"
+                      : "accent"
               }
               active={job.status === "running" || job.status === "resolving"}
             />
           </div>
 
           {errorText && (
-            <p className={clsx("mt-2 flex items-start gap-1.5 text-xs", timedOut ? "text-gold-300" : "text-ember-400")}>
+            <p className={clsx("mt-2 flex items-start gap-1.5 text-xs", timedOut ? "text-amber-300" : "text-ember-400")}>
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span className="break-words">{errorText}</span>
             </p>
@@ -453,7 +472,7 @@ export function JobCard({
               ) : !finished ? (
                 <>
                   {job.status === "queued" && (
-                    <button className="btn-ghost px-3 py-1.5 text-gold-300" onClick={prioritize} disabled={busy}>
+                    <button className="btn-ghost px-3 py-1.5 text-accent-300" onClick={prioritize} disabled={busy}>
                       <ArrowUp className="h-3.5 w-3.5" /> {t("Prioritize")}
                     </button>
                   )}
@@ -467,7 +486,7 @@ export function JobCard({
               ) : (
                 <>
                   {canRetry && (
-                    <button className="btn-ghost px-3 py-1.5 text-gold-300" onClick={retry} disabled={busy}>
+                    <button className="btn-ghost px-3 py-1.5 text-accent-300" onClick={retry} disabled={busy}>
                       <RotateCw className="h-3.5 w-3.5" />{" "}
                       {failedEps > 1 ? t("Retry all ({n})", { n: failedEps }) : t("Retry")}
                     </button>
@@ -483,7 +502,7 @@ export function JobCard({
       </div>
 
       {showEps && totalEps > 0 && (
-        <div className="grid gap-2 border-t border-white/[0.05] bg-black/20 p-4 md:grid-cols-2">
+        <div className="grid gap-2 border-t border-ink-700 bg-ink-950 p-4 md:grid-cols-2">
           {job.episodes.map((ep) => (
             <EpisodeRow
               key={ep.key}
@@ -505,16 +524,16 @@ export function JobCard({
       )}
 
       {showLogs && job.logs.length > 0 && (
-        <div className="max-h-64 overflow-y-auto border-t border-white/[0.05] bg-black/40 p-4 font-mono text-[11px] leading-relaxed">
+        <div className="max-h-64 overflow-x-auto overflow-y-auto border-t border-ink-700 bg-ink-950 p-4 font-mono text-[11px] leading-relaxed">
           {job.logs.map((l, i) => (
-            <div key={i} className="flex gap-2">
+            <div key={i} className="flex min-w-max gap-2">
               <span className="shrink-0 text-slate-600">{clockTime(l.time)}</span>
               <span
                 className={clsx(
                   "shrink-0 font-semibold",
                   l.level === "ERROR" && "text-ember-400",
-                  l.level === "WARN" && "text-gold-400",
-                  l.level === "INFO" && "text-sky-400",
+                  l.level === "WARN" && "text-accent-400",
+                  l.level === "INFO" && "text-accent-400",
                   l.level === "DEBUG" && "text-slate-600",
                 )}
               >
