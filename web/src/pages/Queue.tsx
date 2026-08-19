@@ -4,6 +4,7 @@ import { useApp } from "../store";
 import { useI18n } from "../i18n";
 import { JobCard } from "../components/JobCard";
 import { EmptyState } from "../components/ui";
+import { WatchList } from "../components/WatchList";
 
 export function QueuePage({ onNew }: { onNew: () => void }) {
   const { jobs, toast, epsOpen, toggleEps } = useApp();
@@ -41,6 +42,8 @@ export function QueuePage({ onNew }: { onNew: () => void }) {
           )}
         </div>
       </header>
+
+      <WatchList />
 
       {jobs.length === 0 ? (
         <EmptyState

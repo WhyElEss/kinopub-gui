@@ -642,6 +642,34 @@ func (m *JobManager) hasActiveJobs() bool {
 	return false
 }
 
+// claimedEpisodes returns every episode key the queue already covers for the
+// jobs whose URL the matcher accepts — both the rows a running job shows and the
+// selection a just-created job carries but has not resolved into rows yet. The
+// series watcher uses it to avoid queueing an episode a card already has.
+func (m *JobManager) claimedEpisodes(match func(url string) bool) map[string]bool {
+	m.mu.RLock()
+	jobs := make([]*Job, 0, len(m.jobs))
+	for _, j := range m.jobs {
+		jobs = append(jobs, j)
+	}
+	m.mu.RUnlock()
+
+	out := make(map[string]bool)
+	for _, j := range jobs {
+		j.mu.Lock()
+		if match(j.url) {
+			for _, k := range j.cfg.SelectedEpisodes {
+				out[epKey(k)] = true
+			}
+			for key := range j.episodes {
+				out[key] = true
+			}
+		}
+		j.mu.Unlock()
+	}
+	return out
+}
+
 func (m *JobManager) list() []JobView {
 	m.mu.RLock()
 	jobs := make([]*Job, 0, len(m.jobs))

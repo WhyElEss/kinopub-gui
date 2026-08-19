@@ -29,6 +29,7 @@ You sign in once, with a short device code. Nothing heavy under it — a single 
 - 🎬 **Full-fidelity downloads** — every audio track, every subtitle, whole multi-season series — picked from the catalog or pasted as a direct link.
 - ⚡ **Live progress** — per-episode and per-track percentages, speed, and ETA — all updating in real time.
 - 🔊 **Pick your dubs** — choose which voiceovers to keep right on the title page (remembered for next time) or in a timed picker when downloading from a link; your choice is generalized across episodes.
+- 📡 **Follow a series** — for a show still airing, turn on *Follow*: the app asks kino.pub for new episodes on its own and queues them with the same settings.
 - 🩺 **Doctor** — verify downloads against the state file and repair inconsistencies, with a readable report.
 - 📚 **Library** — browse what you've already downloaded, with sizes, resolutions and missing-file detection; open a finished file or reveal its folder.
 - 🔐 **Sign in once** — a short device-code login; tokens are stored encrypted and machine-bound. Local features (Library, Doctor, Settings) work without signing in.
@@ -148,6 +149,13 @@ From a title's detail view (or the Download page), tick the seasons/episodes you
 
 An **Advanced options** panel covers the fine print: container (MKV / MP4), concurrency, retries, request throttle, proxy (HTTP/HTTPS/SOCKS5), *Force re-download* and *No chunked download* toggles, verbose logs, and an extra-ffmpeg-args field. It's pre-filled from your Settings, so most of the time you can leave it alone.
 
+**Following a show that is still airing.** The episode list is captured when a download is queued, so a series with 3 of 10 episodes out stays a three-episode download forever. The **Follow** button on a title's page lifts that: the app asks kino.pub what the series has now, every few hours, and queues whatever is missing from disk — at the quality, voiceover, folder and name template that were selected when following started.
+
+- The seasons followed are the ones your selection covered. Select every season and future ones are followed too, so a show that rolls over into its next season keeps downloading.
+- An episode that is announced but not yet encoded (no files) is skipped until a later check.
+- Each episode is queued once: if its card fails, the card stays in the queue with its own **Retry**, and following does not pile up identical cards. Remove the card (or "Clear finished") and the next check picks that episode up again.
+- Followed series are listed on the **Queue** page: when they were last checked, how many episodes exist and how many are downloaded, plus *Check now*, *Pause checks* and *Stop following*. The list survives a restart (`watchlist.json`, next to the settings).
+
 ### 4. Audio tracks
 
 You pick dubs/voiceovers right where you start the download:
@@ -231,7 +239,7 @@ Both themes are built on CSS variables: components carry no per-theme colour dup
 
 ### 10. Settings
 
-Defaults for new downloads (output folders and path templates — separately for series and films, quality, container, concurrency, retries, throttle, proxy) plus extra folders to scan in the Library, the kino.pub sign-in, the ffmpeg installer and the software updater. Stored at `~/.config/kinopub/gui.json` (or `$XDG_CONFIG_HOME/kinopub/gui.json`).
+Defaults for new downloads (output folders and path templates — separately for series and films, quality, container, concurrency, retries, throttle, proxy), how often followed series are re-checked (15 minutes to 24 hours, 3 hours by default), plus extra folders to scan in the Library, the kino.pub sign-in, the ffmpeg installer and the software updater. Stored at `~/.config/kinopub/gui.json` (or `$XDG_CONFIG_HOME/kinopub/gui.json`).
 
 ---
 
@@ -295,7 +303,7 @@ internal/
     doctor/         verify & repair downloads
     statestore/     per-series .kinopub-state.json
     …               outputlayout, scheduler, progress, proxyprovider
-  gui/              REST + SSE server, job manager, discovery, HLS player proxy, reporter/chooser
+  gui/              REST + SSE server, job manager, series watcher, discovery, HLS player proxy, reporter/chooser
   lib/              credstore (encrypted creds), httpx (uTLS), logx, audiomenu, …
 web/                React + Vite + Tailwind frontend
   dist/             built UI, embedded into the binary (go:embed)

@@ -58,6 +58,9 @@ type Settings struct {
 	// reorderable queue. 0 means no limit (every download starts immediately,
 	// the default), in which case the queue/priority controls never engage.
 	MaxActiveJobs int `json:"maxActiveJobs"`
+	// WatchIntervalMinutes is how often followed series are re-checked for new
+	// episodes. 0 uses the default; the watcher clamps the rest (see watcher.go).
+	WatchIntervalMinutes int `json:"watchIntervalMinutes"`
 }
 
 // outputDirEnv seeds the default output folder on a machine where the home
@@ -80,16 +83,18 @@ func defaultSettings() Settings {
 		MovieDirTemplate:  outputlayout.DefaultMovieDirTemplate,
 		MovieNameTemplate: outputlayout.DefaultMovieNameTemplate,
 
-		Quality:       "1080p",
-		Container:     "mkv",
-		Concurrency:   2,
-		Retries:       5,
-		Verbosity:     "normal",
+		Quality:     "1080p",
+		Container:   "mkv",
+		Concurrency: 2,
+		Retries:     5,
+		Verbosity:   "normal",
 		// auto = follow the viewer's system setting; the UI also accepts
 		// "light"/"dark" and treats anything else as auto.
 		Theme:         "auto",
 		LibraryDirs:   nil,
 		MaxActiveJobs: 0, // unlimited by default — no behavior change until set
+
+		WatchIntervalMinutes: defaultWatchIntervalMinutes,
 	}
 }
 
@@ -232,6 +237,16 @@ func (s *settingsStore) save(in Settings) (Settings, error) {
 	}
 	if in.MaxActiveJobs < 0 {
 		in.MaxActiveJobs = 0
+	}
+	// 0 keeps the default; anything else is clamped to the range the watcher
+	// accepts, so the field shows the interval that will actually be used.
+	if in.WatchIntervalMinutes != 0 {
+		if in.WatchIntervalMinutes < minWatchIntervalMinutes {
+			in.WatchIntervalMinutes = minWatchIntervalMinutes
+		}
+		if in.WatchIntervalMinutes > maxWatchIntervalMinutes {
+			in.WatchIntervalMinutes = maxWatchIntervalMinutes
+		}
 	}
 	if in.MaxActiveJobs > 16 {
 		in.MaxActiveJobs = 16

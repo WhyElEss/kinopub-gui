@@ -16,6 +16,7 @@ import {
   type Settings,
   type Snapshot,
   type UpdateStatus,
+  type WatchView,
 } from "./api";
 import { applyTheme, normalizeTheme } from "./theme";
 import {
@@ -35,6 +36,8 @@ interface AppContextValue {
   connected: boolean;
   version: string;
   jobs: JobView[];
+  // Series the app follows, re-checking kino.pub for episodes that aired since.
+  watches: WatchView[];
   kpauth: KPStatus;
   kpUser: KPUser | null;
   kpUserError: boolean;
@@ -86,6 +89,7 @@ const emptySettings: Settings = {
   theme: "auto",
   libraryDirs: null,
   maxActiveJobs: 0,
+  watchIntervalMinutes: 180,
 };
 
 function sortJobs(jobs: JobView[]): JobView[] {
@@ -98,6 +102,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [connected, setConnected] = useState(false);
   const [version, setVersion] = useState("");
   const [jobs, setJobs] = useState<JobView[]>([]);
+  const [watches, setWatches] = useState<WatchView[]>([]);
   const [kpauth, setKpAuth] = useState<KPStatus>(emptyKpAuth);
   const [kpUser, setKpUser] = useState<KPUser | null>(null);
   const [kpUserError, setKpUserError] = useState(false);
@@ -148,6 +153,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     setVersion(snap.version);
     setJobs(sortJobs(snap.jobs || []));
+    setWatches(snap.watches || []);
     setKpAuth(snap.kpauth || emptyKpAuth);
     setFFmpeg(snap.ffmpeg || emptyFFmpeg);
     setCanOpenFiles(!!snap.canOpenFiles);
@@ -205,6 +211,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             });
             break;
           }
+          case "watches":
+            setWatches((parsed.data as WatchView[]) || []);
+            break;
           case "job_removed": {
             const id = (parsed.data as { id: string }).id;
             setJobs((cur) => cur.filter((j) => j.id !== id));
@@ -291,6 +300,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       version,
       canOpenFiles,
       jobs,
+      watches,
       kpauth,
       kpUser,
       kpUserError,
@@ -310,7 +320,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toast,
       dismissToast,
     }),
-    [connected, version, canOpenFiles, epsOpen, jobs, kpauth, kpUser, kpUserError, ffmpeg, settings, settingsLoaded, update, ffmpegInstall, toasts],
+    [connected, version, canOpenFiles, epsOpen, jobs, watches, kpauth, kpUser, kpUserError, ffmpeg, settings, settingsLoaded, update, ffmpegInstall, toasts],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

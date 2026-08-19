@@ -143,6 +143,8 @@ export interface Settings {
   theme: string;
   libraryDirs: string[] | null;
   maxActiveJobs: number;
+  // How often followed series are re-checked for new episodes, in minutes.
+  watchIntervalMinutes: number;
 }
 
 export interface Snapshot {
@@ -150,6 +152,7 @@ export interface Snapshot {
   // False on a server install: there is no desktop session to hand a file to.
   canOpenFiles?: boolean;
   jobs: JobView[];
+  watches: WatchView[];
   kpauth: KPStatus;
   ffmpeg: FFmpegStatus;
   settings: Settings;
@@ -319,6 +322,30 @@ export interface StartRequest extends RunRequest {
   seedTitles: Record<string, string> | null;
 }
 
+// WatchView is a followed series: the app re-asks kino.pub what episodes exist
+// and downloads the ones that are missing.
+export interface WatchView {
+  id: string;
+  url: string;
+  title?: string;
+  posterUrl?: string;
+  seasons?: number[];
+  paused?: boolean;
+  createdAt: string;
+  lastCheck?: string;
+  lastError?: string;
+  lastFoundAt?: string;
+  lastQueued?: string[];
+  available?: number;
+  downloaded?: number;
+}
+
+export interface WatchRequest extends RunRequest {
+  seedTitle: string;
+  seedPoster: string;
+  watchSeasons?: number[];
+}
+
 export interface PreviewEpisode {
   key: string;
   season: number;
@@ -481,6 +508,12 @@ export const api = {
   getSettings: () => req<Settings>("GET", "/api/settings"),
   saveSettings: (s: Settings) => req<Settings>("PUT", "/api/settings", s),
   preview: (r: Partial<RunRequest>) => req<PreviewResponse>("POST", "/api/preview", r),
+  watches: () => req<WatchView[]>("GET", "/api/watches"),
+  followSeries: (r: Partial<WatchRequest>) => req<WatchView>("POST", "/api/watches", r),
+  unfollowSeries: (id: string) => req<{ ok: boolean }>("DELETE", `/api/watches/${id}`),
+  checkWatch: (id: string) => req<{ queued: string[] | null }>("POST", `/api/watches/${id}/check`),
+  checkAllWatches: () => req<{ ok: boolean }>("POST", "/api/watches/check"),
+  pauseWatch: (id: string, paused: boolean) => req<WatchView>("POST", `/api/watches/${id}/pause`, { paused }),
   jobs: () => req<JobView[]>("GET", "/api/jobs"),
   startJob: (r: Partial<StartRequest>) => req<JobView>("POST", "/api/jobs", r),
   cancelJob: (id: string) => req<{ canceling: boolean }>("POST", `/api/jobs/${id}/cancel`),

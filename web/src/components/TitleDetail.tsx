@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import clsx from "clsx";
 import {
   Check,
   ChevronDown,
@@ -10,12 +11,14 @@ import {
   Loader2,
   Mic2,
   Play,
+  Rss,
   Star,
 } from "lucide-react";
 import {
   api,
   type DiscoverDetail,
   type DiscoverItem,
+  type StartRequest,
   imgURL,
 } from "../api";
 import { buildAudioSpecs } from "../audio";
@@ -73,7 +76,7 @@ export function TitleDetail({
   onPick: (item: DiscoverItem) => void;
   onStarted: () => void;
 }) {
-  const { settings, ffmpeg, toast } = useApp();
+  const { settings, ffmpeg, toast, watches } = useApp();
   const { t } = useI18n();
 
   const [detail, setDetail] = useState<DiscoverDetail | null>(null);
@@ -93,6 +96,7 @@ export function TitleDetail({
   const [epSel, setEpSel] = useState<Set<string> | null>(null);
   const [openSeasons, setOpenSeasons] = useState<Set<number>>(new Set());
   const [starting, setStarting] = useState(false);
+  const [following, setFollowing] = useState(false);
   // Destination for this download: folder plus the two path templates, seeded
   // from the saved defaults (the movie pair for films, the series pair
   // otherwise) once the detail — and with it the item's type — is known.
@@ -202,6 +206,8 @@ export function TitleDetail({
     });
 
   const isSerial = !!detail?.seasons && detail.seasons.length > 0;
+  // The standing "keep downloading this one" instruction for this title, if any.
+  const followed = watches.find((w) => w.id === detail?.id);
   const selectedCount = isSerial ? epSel?.size ?? 0 : 1;
 
   // Values the path preview substitutes. The first selected episode (or 1×1 for
@@ -224,20 +230,20 @@ export function TitleDetail({
     };
   }, [detail, epSel, quality]);
 
-  const start = async () => {
-    if (!detail) return;
+  // The download request for this title as currently configured. Shared by the
+  // Download button and by Follow, so a followed series is downloaded with
+  // exactly the settings shown here. Returns null (after a toast) when the form
+  // is not ready.
+  const buildRequest = (): Partial<StartRequest> | null => {
+    if (!detail) return null;
     if (!ffmpeg.ffmpegFound) {
       toast(t("ffmpeg not found — install it to download"), "error");
-      return;
-    }
-    if (isSerial && (!epSel || epSel.size === 0)) {
-      toast(t("Select at least one episode"), "error");
-      return;
+      return null;
     }
     const chosenAudios = detail.audios.filter((a) => audioSel.has(a.label));
     if (detail.audios.length > 0 && chosenAudios.length === 0) {
       toast(t("Select at least one voiceover"), "error");
-      return;
+      return null;
     }
     // When every track is selected, send no filter (keep all). Otherwise build
     // exact per-track rules that match the chosen variants and nothing else
@@ -248,42 +254,95 @@ export function TitleDetail({
     const seedTitles = Object.fromEntries(
       (detail.seasons || []).flatMap((s) => s.episodes.map((e) => [epKey(e.season, e.episode), e.title])),
     );
+    return {
+      url: detail.itemUrl,
+      outputPath,
+      dirTemplate: dirTmpl,
+      nameTemplate: nameTmpl,
+      quality,
+      container: settings.container,
+      concurrency: settings.concurrency,
+      retries: settings.retries,
+      minIntervalMs: settings.minIntervalMs,
+      proxy: settings.proxy,
+      seasons: "",
+      episodes: "",
+      audio: "",
+      audioSpecs,
+      audioMenu: false,
+      force: false,
+      noChunked: settings.noChunked,
+      dryRun: false,
+      ffmpegArgs: "",
+      ffmpegPath: "",
+      userAgent: "",
+      verbosity: settings.verbosity,
+      seedTitle: detail.title,
+      seedPoster: detail.poster,
+      seedTitles,
+    };
+  };
+
+  const start = async () => {
+    if (!detail) return;
+    if (isSerial && (!epSel || epSel.size === 0)) {
+      toast(t("Select at least one episode"), "error");
+      return;
+    }
+    const req = buildRequest();
+    if (!req) return;
     setStarting(true);
     try {
-      await api.startJob({
-        url: detail.itemUrl,
-        outputPath,
-        dirTemplate: dirTmpl,
-        nameTemplate: nameTmpl,
-        quality,
-        container: settings.container,
-        concurrency: settings.concurrency,
-        retries: settings.retries,
-        minIntervalMs: settings.minIntervalMs,
-        proxy: settings.proxy,
-        seasons: "",
-        episodes: "",
-        episodeKeys: isSerial && epSel ? [...epSel] : undefined,
-        audio: "",
-        audioSpecs,
-        audioMenu: false,
-        force: false,
-        noChunked: settings.noChunked,
-        dryRun: false,
-        ffmpegArgs: "",
-        ffmpegPath: "",
-        userAgent: "",
-        verbosity: settings.verbosity,
-        seedTitle: detail.title,
-        seedPoster: detail.poster,
-        seedTitles,
-      });
+      await api.startJob({ ...req, episodeKeys: isSerial && epSel ? [...epSel] : undefined });
       toast(t("Download started"), "success");
       onStarted();
     } catch (e: any) {
       toast(e.message || t("Failed to start"), "error");
     } finally {
       setStarting(false);
+    }
+  };
+
+  // Seasons a follow covers: the ones the current selection touches, or every
+  // season — present and future — when the selection spans all of them, which is
+  // what an airing show needs once it rolls over into the next season.
+  const followSeasons = (): number[] => {
+    const all = (detail?.seasons || []).map((s) => s.number);
+    const picked = new Set(
+      (detail?.seasons || [])
+        .filter((s) => s.episodes.some((e) => epSel?.has(epKey(e.season, e.episode))))
+        .map((s) => s.number),
+    );
+    if (picked.size === 0 || picked.size === all.length) return [];
+    return [...picked];
+  };
+
+  const toggleFollow = async () => {
+    if (!detail) return;
+    setFollowing(true);
+    try {
+      if (followed) {
+        await api.unfollowSeries(followed.id);
+        toast(t("No longer following {title}", { title: detail.title }), "info");
+        return;
+      }
+      const req = buildRequest();
+      if (!req) return;
+      // The server checks straight away, so the answer already says what it
+      // queued — following a series that is behind starts downloading now.
+      const w = await api.followSeries({ ...req, watchSeasons: followSeasons() });
+      const queued = w.lastQueued?.length ?? 0;
+      toast(
+        queued > 0
+          ? t("Following — {n} episodes queued", { n: queued })
+          : t("Following — new episodes will be downloaded automatically"),
+        "success",
+      );
+      if (queued > 0) onStarted();
+    } catch (e: any) {
+      toast(e.message || "Error", "error");
+    } finally {
+      setFollowing(false);
     }
   };
 
@@ -561,6 +620,21 @@ export function TitleDetail({
               {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               {isSerial ? t("Download ({n})", { n: selectedCount }) : t("Download")}
             </button>
+            {isSerial && (
+              <button
+                className={clsx("btn-ghost", followed && "text-gold-300")}
+                onClick={toggleFollow}
+                disabled={following}
+                title={
+                  followed
+                    ? t("Stop downloading new episodes of this series automatically")
+                    : t("Download new episodes of the selected seasons as they appear on kino.pub")
+                }
+              >
+                {following ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rss className="h-4 w-4" />}
+                {followed ? t("Following") : t("Follow")}
+              </button>
+            )}
             {!isSerial && (
               <button
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-500/90 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-emerald-400"

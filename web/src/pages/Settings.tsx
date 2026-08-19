@@ -244,6 +244,21 @@ export function SettingsPage() {
               {t("0 = no limit. When set, extra downloads wait in a queue you can reorder.")}
             </p>
           </Field>
+          <Field
+            label={t("Check followed series every (min)")}
+            hint={t("How often kino.pub is asked whether a followed series has new episodes. 15 minutes to 24 hours.")}
+          >
+            <input
+              type="number"
+              min={15}
+              max={1440}
+              className="input"
+              value={form.watchIntervalMinutes}
+              onChange={(e) =>
+                set("watchIntervalMinutes", e.target.value === "" ? 180 : Math.max(0, Number(e.target.value)))
+              }
+            />
+          </Field>
         </div>
 
         <p className="text-xs text-slate-500">

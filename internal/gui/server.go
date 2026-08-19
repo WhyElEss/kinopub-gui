@@ -30,6 +30,7 @@ type Server struct {
 	hub      *Hub
 	mgr      *JobManager
 	settings *settingsStore
+	watches  *watchList
 	updater  *updateChecker
 	tools    *toolInstaller
 	restart  func() // set by main to re-exec the freshly installed binary
@@ -83,6 +84,7 @@ func NewServer(version string, static fs.FS) *Server {
 		hub:        hub,
 		mgr:        newJobManager(hub),
 		settings:   newSettingsStore(),
+		watches:    newWatchList(),
 		updater:    newUpdateChecker(version),
 		tools:      &toolInstaller{},
 		hlsKey:     randomKey(32),
@@ -301,6 +303,13 @@ func (s *Server) routes() {
 	mux.HandleFunc("POST /api/jobs/{id}/resume-episode", s.handleResumeEpisode)
 	mux.HandleFunc("POST /api/jobs/{id}/audio", s.handleAudioAnswer)
 
+	mux.HandleFunc("GET /api/watches", s.handleListWatches)
+	mux.HandleFunc("POST /api/watches", s.handleCreateWatch)
+	mux.HandleFunc("POST /api/watches/check", s.handleCheckAllWatches)
+	mux.HandleFunc("DELETE /api/watches/{id}", s.handleDeleteWatch)
+	mux.HandleFunc("POST /api/watches/{id}/check", s.handleCheckWatch)
+	mux.HandleFunc("POST /api/watches/{id}/pause", s.handlePauseWatch)
+
 	mux.HandleFunc("POST /api/doctor", s.handleDoctor)
 	mux.HandleFunc("GET /api/library", s.handleLibrary)
 	mux.HandleFunc("GET /api/library/downloaded", s.handleLibraryDownloaded)
@@ -324,10 +333,11 @@ func (s *Server) snapshot() map[string]any {
 	return map[string]any{
 		"version":      s.version,
 		"canOpenFiles": canOpenInOS(),
-		"jobs":     s.mgr.list(),
-		"kpauth":   s.kpStatus(),
-		"ffmpeg":   ffmpegStatus(),
-		"settings": s.settings.get(),
+		"jobs":         s.mgr.list(),
+		"watches":      s.watches.list(),
+		"kpauth":       s.kpStatus(),
+		"ffmpeg":       ffmpegStatus(),
+		"settings":     s.settings.get(),
 	}
 }
 

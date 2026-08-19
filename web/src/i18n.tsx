@@ -146,6 +146,33 @@ const RU: Record<string, string> = {
   Stop: "Стоп",
   Remove: "Удалить",
   Retry: "Повторить",
+  // Following a series: new episodes are downloaded as they appear.
+  Follow: "Следить",
+  Following: "Слежу",
+  "Following ({n})": "Слежу ({n})",
+  "Download new episodes of the selected seasons as they appear on kino.pub":
+    "Скачивать новые серии выбранных сезонов, как только они появятся на Кинопабе",
+  "Stop downloading new episodes of this series automatically":
+    "Перестать скачивать новые серии этого сериала автоматически",
+  "Following — new episodes will be downloaded automatically":
+    "Слежу — новые серии будут скачиваться автоматически",
+  "Following — {n} episodes queued": "Слежу — в очередь добавлено серий: {n}",
+  "No longer following {title}": "Больше не слежу за «{title}»",
+  "New episodes are downloaded automatically with the settings each series was followed with.":
+    "Новые серии скачиваются автоматически с теми настройками, с которыми сериал был добавлен.",
+  "Check now": "Проверить",
+  "Checking for new episodes…": "Проверяю, есть ли новые серии…",
+  "{n} new episodes queued": "Новых серий в очереди: {n}",
+  "No new episodes yet": "Новых серий пока нет",
+  "Pause checks": "Приостановить проверки",
+  "Resume checks": "Возобновить проверки",
+  "Stop following": "Перестать следить",
+  "all seasons": "все сезоны",
+  checked: "проверено",
+  "not checked yet": "ещё не проверялось",
+  "Check followed series every (min)": "Проверять сериалы каждые (мин)",
+  "How often kino.pub is asked whether a followed series has new episodes. 15 minutes to 24 hours.":
+    "Как часто спрашивать Кинопаб о новых сериях. От 15 минут до 24 часов.",
   "Retry all ({n})": "Повторить все ({n})",
   Resume: "Продолжить",
   paused: "на паузе",

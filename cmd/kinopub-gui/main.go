@@ -55,6 +55,8 @@ func run() int {
 	srv := gui.NewServer(version, web.Dist())
 	srv.SetAllowLAN(lan)
 	srv.SetSelfUpdate(!noSelfUpdate)
+	// Followed series are checked for new episodes in the background from here on.
+	srv.StartWatcher()
 
 	// Bind the listener up front so we know the final address (and can fall
 	// back to an ephemeral port if the preferred one is taken).

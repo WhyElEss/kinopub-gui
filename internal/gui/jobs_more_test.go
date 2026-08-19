@@ -529,3 +529,30 @@ func TestFinalizeRun_NoRowsFallsBackToResult(t *testing.T) {
 		t.Errorf("status = %q, want %q", j.status, statusFailed)
 	}
 }
+
+// A job claims its episodes the moment it is created — before the engine has
+// resolved them into rows — so a series check landing in that window does not
+// queue the same episodes on a second card.
+func TestClaimedEpisodes(t *testing.T) {
+	m := newJobManager(newHub())
+	mine := newJob("j1", "https://kino.pub/item/view/42", domain.RunConfig{
+		SelectedEpisodes: []domain.EpisodeKey{{Season: 1, Episode: 4}},
+	})
+	mine.episodes["S1E1"] = &EpisodeView{Key: "S1E1", Season: 1, Episode: 1, State: epCompleted}
+	other := newJob("j2", "https://kino.pub/item/view/99", domain.RunConfig{
+		SelectedEpisodes: []domain.EpisodeKey{{Season: 1, Episode: 7}},
+	})
+	m.add(mine)
+	m.add(other)
+
+	got := m.claimedEpisodes(func(url string) bool { return url == "https://kino.pub/item/view/42" })
+	if !got["S1E4"] {
+		t.Error("an unresolved selection must count as claimed")
+	}
+	if !got["S1E1"] {
+		t.Error("an existing row must count as claimed")
+	}
+	if got["S1E7"] {
+		t.Error("another title's episodes must not be claimed")
+	}
+}
