@@ -188,3 +188,72 @@ func TestRemovePersistsSynchronously(t *testing.T) {
 		t.Errorf("removed job still persisted: %v", got)
 	}
 }
+
+// A card saved before the verdict came from the episode rows carries the last
+// run's summary — "1 ok" from a per-episode retry — and reads Completed even
+// though episodes are still broken. Restoring re-derives both from the rows, so
+// the card heals (and gets its Retry back) on the next start.
+func TestRestoreJobRecomputesStaleSummary(t *testing.T) {
+	p := persistedJob{
+		ID:      "job-9",
+		URL:     "https://kino.pub/item/view/121819",
+		Status:  statusCompleted,
+		Summary: &SummaryView{Total: 1, Succeeded: 1},
+		Episodes: []EpisodeView{
+			{Key: "S1E1", Season: 1, Episode: 1, State: epCompleted, Percent: 100},
+			{Key: "S1E2", Season: 1, Episode: 2, State: epCompleted, Percent: 100},
+			{Key: "S1E3", Season: 1, Episode: 3, State: epFailed, Error: "boom"},
+		},
+	}
+	j := restoreJob(p)
+	if j.status != statusFailed {
+		t.Errorf("status = %q, want %q — an episode is still broken", j.status, statusFailed)
+	}
+	if j.summary.Total != 3 || j.summary.Succeeded != 2 || j.summary.Failed != 1 {
+		t.Errorf("summary = %+v, want 2 ok / 1 failed of 3", *j.summary)
+	}
+}
+
+// A genuinely clean card must survive the same pass untouched.
+func TestRestoreJobKeepsCleanCompleted(t *testing.T) {
+	j := restoreJob(persistedJob{
+		ID:       "job-10",
+		Status:   statusCompleted,
+		Episodes: []EpisodeView{{Key: "S1E1", Season: 1, Episode: 1, State: epCompleted, Percent: 100}},
+	})
+	if j.status != statusCompleted || j.summary.Failed != 0 {
+		t.Errorf("status = %q, summary = %+v, want a clean completed card", j.status, *j.summary)
+	}
+}
+
+// A card with no episode rows (a movie, a dry run) keeps the summary it was
+// saved with — there are no rows to re-derive it from.
+func TestRestoreJobKeepsSummaryWithoutRows(t *testing.T) {
+	j := restoreJob(persistedJob{
+		ID:      "job-11",
+		Status:  statusCompleted,
+		Summary: &SummaryView{Total: 1, Succeeded: 1},
+	})
+	if j.summary == nil || j.summary.Succeeded != 1 || j.status != statusCompleted {
+		t.Errorf("status = %q, summary = %+v, want the persisted summary kept", j.status, j.summary)
+	}
+}
+
+// A restored paused card is not a failure: its unfinished rows are held, not
+// counted as failed, and it keeps the status that lets Resume work.
+func TestRestoreJobPausedNotFailed(t *testing.T) {
+	j := restoreJob(persistedJob{
+		ID:     "job-12",
+		Status: statusRunning, // died with the old process → restored as paused
+		Episodes: []EpisodeView{
+			{Key: "S1E1", Season: 1, Episode: 1, State: epCompleted, Percent: 100},
+			{Key: "S1E2", Season: 1, Episode: 2, State: epRunning, Percent: 40},
+		},
+	})
+	if j.status != statusPaused {
+		t.Errorf("status = %q, want %q", j.status, statusPaused)
+	}
+	if j.summary.Failed != 0 {
+		t.Errorf("summary = %+v, want no failures on a paused card", *j.summary)
+	}
+}

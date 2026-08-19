@@ -2,6 +2,7 @@ package gui
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -101,22 +102,22 @@ func persistedFrom(j *Job) persistedJob {
 		titles[k] = v
 	}
 	return persistedJob{
-		ID:         j.id,
-		URL:        j.url,
-		Status:     j.status,
-		Title:      j.title,
-		PosterURL:  j.posterURL,
-		OutputPath: j.outputPath,
-		Quality:    j.quality,
-		CreatedAt:  j.createdAt,
-		StartedAt:  j.startedAt,
-		FinishedAt: j.finishedAt,
-		Error:      j.errMsg,
-		Plan:       j.plan,
-		Episodes:   eps,
-		Summary:    j.summary,
-		Titles:     titles,
-		SeedTitles: j.seedTitles,
+		ID:             j.id,
+		URL:            j.url,
+		Status:         j.status,
+		Title:          j.title,
+		PosterURL:      j.posterURL,
+		OutputPath:     j.outputPath,
+		Quality:        j.quality,
+		CreatedAt:      j.createdAt,
+		StartedAt:      j.startedAt,
+		FinishedAt:     j.finishedAt,
+		Error:          j.errMsg,
+		Plan:           j.plan,
+		Episodes:       eps,
+		Summary:        j.summary,
+		Titles:         titles,
+		SeedTitles:     j.seedTitles,
 		Cfg:            j.cfg,
 		FollowDefaults: j.followDefaults,
 	}
@@ -172,6 +173,20 @@ func restoreJob(p persistedJob) *Job {
 			Level:   "INFO",
 			Message: "restored after restart — press Resume to continue this download",
 		})
+	}
+	// Re-derive the verdict from the rows, exactly as a finished run does. A card
+	// written before the card's status stopped coming from the last run's result
+	// carries that stale summary — typically "1 ok" from a per-episode retry — on
+	// a series with episodes still broken, and reads Completed with no way to
+	// retry them. Restoring recomputes it, so those cards heal on the next start.
+	if sum := tallyEpisodesLocked(j); sum.Total > 0 { // safe: j is not shared yet
+		j.summary = &sum
+		if j.status == statusCompleted && sum.Failed > 0 {
+			j.status = statusFailed
+			if j.errMsg == "" {
+				j.errMsg = fmt.Sprintf("%d of %d episodes failed", sum.Failed, sum.Total)
+			}
+		}
 	}
 	return j
 }
