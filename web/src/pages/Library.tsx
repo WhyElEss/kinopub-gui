@@ -17,6 +17,17 @@ function itemIdOf(s: LibrarySeries): string {
   return "";
 }
 
+// epLabel names a row by the season/episode the record itself carries rather
+// than by its state-file key. The two agree for every ordinary download, but a
+// library whose files were re-numbered on disk (season folders renamed to match
+// what a media server expects) keeps its original kino.pub keys — those are what
+// the engine skips already-downloaded episodes by — and the key would then
+// contradict the file the row points at.
+function epLabel(e: LibraryEpisode): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `S${pad(e.season)}E${pad(e.episode)}`;
+}
+
 // pageIsLocal reports whether the browser and the server are the same machine.
 // Handing a file to the SERVER's desktop is only useful then; from another
 // device it would open the film on the server, where nobody is watching.
@@ -99,7 +110,7 @@ function SeriesCard({ s, onDeleted, onOpenCard }: { s: LibrarySeries; onDeleted:
   };
 
   const removeEpisode = async (e: LibraryEpisode) => {
-    const label = `${e.key}${e.title ? ` · ${e.title}` : ""}`;
+    const label = `${epLabel(e)}${e.title ? ` · ${e.title}` : ""}`;
     if (!window.confirm(t("Delete episode {label} from disk? This frees its space and cannot be undone.", { label }))) {
       return;
     }
@@ -181,7 +192,7 @@ function SeriesCard({ s, onDeleted, onOpenCard }: { s: LibrarySeries; onDeleted:
                 ) : (
                   <XCircle className="h-4 w-4 shrink-0 text-ember-400/80" />
                 )}
-                <span className="w-12 shrink-0 font-mono text-xs text-slate-500">{e.key}</span>
+                <span className="w-16 shrink-0 font-mono text-xs text-slate-500">{epLabel(e)}</span>
                 <span className="min-w-0 flex-1 truncate text-slate-300">{e.title || t("Episode {n}", { n: e.episode })}</span>
                 {e.resolution && <span className="hidden text-[11px] text-slate-500 sm:inline">{e.resolution}</span>}
                 <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{bytes(e.bytes)}</span>
