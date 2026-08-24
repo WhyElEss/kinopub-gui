@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   api,
+  triggerUnauthorized,
   type FFmpegStatus,
   type JobView,
   type KPStatus,
@@ -186,6 +187,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       es.onerror = () => {
         setConnected(false);
         es?.close();
+        // EventSource does not report the status code, so a session that
+        // expired while the tab sat open is indistinguishable from a restart:
+        // both are just "error, retry". Asking the server which one it is turns
+        // the first case into the sign-in form instead of a banner that says
+        // "reconnecting" forever. api.authMeta() itself never triggers the
+        // handler, so this cannot loop.
+        api
+          .authMeta()
+          .then((m) => {
+            if (m.required && !m.signedIn) triggerUnauthorized();
+          })
+          .catch(() => {});
         retry = window.setTimeout(connect, 1500);
       };
       es.onmessage = (ev) => {

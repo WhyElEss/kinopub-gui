@@ -7,6 +7,7 @@ import { Field, Spinner, Toggle } from "../components/ui";
 import { DirPicker } from "../components/DirPicker";
 import { InstallFFmpeg } from "../components/InstallFFmpeg";
 import { KinopubLogin } from "../components/KinopubLogin";
+import { SecurityPanel } from "../components/SecurityPanel";
 import {
   DEFAULT_DIR_TEMPLATE,
   DEFAULT_MOVIE_DIR_TEMPLATE,
@@ -110,6 +111,10 @@ export function SettingsPage() {
       </header>
 
       <KinopubLogin />
+
+      {/* This server's own login, when one is configured. Renders nothing at
+          all otherwise, so a loopback install sees the page it always had. */}
+      <SecurityPanel />
 
       <div className="card space-y-4 p-5">
         <div className="space-y-4">

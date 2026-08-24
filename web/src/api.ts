@@ -473,6 +473,65 @@ export interface FSListing {
   dirs: FSEntry[] | null;
 }
 
+// This server's own login (not kino.pub's). Present only when the operator
+// configured a password; without one the app behaves as it always has.
+export interface AuthMeta {
+  required: boolean;
+  user: string;
+  totp: boolean;
+  signedIn: boolean;
+}
+
+export interface TotpStatus {
+  enabled: boolean;
+  broken: boolean;
+  source: "env" | "file" | "";
+  managedHere: boolean;
+  file: string;
+  user: string;
+  sessions: number;
+}
+
+export interface TotpEnrolment {
+  secret: string;
+  uri: string;
+  // What the authenticator app should be showing right now. A clock problem
+  // surfaces here at setup rather than at the login screen a week later.
+  expectedNow: string;
+  expiresInSec: number;
+}
+
+// Thrown for any 401 so callers can tell "the session went away" from a real
+// failure. The login routes are exempt from the handler below, or a mistyped
+// password would open the sign-in prompt on top of itself.
+export class UnauthorizedError extends Error {
+  needsTotp: boolean;
+  constructor(message: string, needsTotp = false) {
+    super(message);
+    this.name = "UnauthorizedError";
+    this.needsTotp = needsTotp;
+  }
+}
+
+let onUnauthorized: (() => void) | null = null;
+
+// Registered once by the gate. Every 401 outside the login routes routes here,
+// so a session that expired while the tab sat open turns into the sign-in form
+// instead of a page of failing requests. Nothing is retried automatically: a
+// replayed PUT is a change nobody asked for twice.
+export function setUnauthorizedHandler(fn: (() => void) | null): void {
+  onUnauthorized = fn;
+}
+
+// The SSE stream cannot report a status code — a session that expired while the
+// tab sat open looks exactly like a restart. The store asks the server which it
+// is and calls this when the answer is "signed out".
+export function triggerUnauthorized(): void {
+  onUnauthorized?.();
+}
+
+const AUTH_PATHS = new Set(["/api/auth/meta", "/api/auth/login", "/api/auth/logout"]);
+
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
     method,
@@ -493,12 +552,29 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
       (data && typeof data === "object" && "error" in data
         ? String((data as { error: unknown }).error)
         : "") || `HTTP ${res.status}`;
+    if (res.status === 401) {
+      const needsTotp =
+        !!data && typeof data === "object" && "needsTotp" in data
+          ? !!(data as { needsTotp: unknown }).needsTotp
+          : false;
+      if (!AUTH_PATHS.has(path.split("?")[0]) && onUnauthorized) onUnauthorized();
+      throw new UnauthorizedError(msg, needsTotp);
+    }
     throw new Error(msg);
   }
   return data as T;
 }
 
 export const api = {
+  authMeta: () => req<AuthMeta>("GET", "/api/auth/meta"),
+  login: (user: string, password: string, totp: string) =>
+    req<{ ok: boolean }>("POST", "/api/auth/login", { user, password, totp }),
+  logout: () => req<{ ok: boolean }>("POST", "/api/auth/logout"),
+  totpStatus: () => req<TotpStatus>("GET", "/api/auth/totp"),
+  totpBegin: () => req<TotpEnrolment>("POST", "/api/auth/totp/begin", {}),
+  totpEnable: (code: string) => req<{ ok: boolean; note: string }>("POST", "/api/auth/totp/enable", { code }),
+  totpDisable: (password: string, code: string) =>
+    req<{ ok: boolean }>("POST", "/api/auth/totp/disable", { password, code }),
   state: () => req<Snapshot>("GET", "/api/state"),
   ffmpeg: () => req<FFmpegStatus>("GET", "/api/ffmpeg"),
   deps: () => req<DepsView>("GET", "/api/deps"),

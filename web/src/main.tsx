@@ -4,6 +4,7 @@ import App from "./App";
 import { AppProvider } from "./store";
 import { I18nProvider } from "./i18n";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { AuthGate } from "./components/AuthGate";
 import { applyStoredTheme } from "./theme";
 import "./index.css";
 
@@ -16,9 +17,14 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
       <I18nProvider>
-        <AppProvider>
-          <App />
-        </AppProvider>
+        {/* Outside AppProvider on purpose: the store opens an SSE stream and
+            starts polling, and none of that should run before anyone is signed
+            in. Without a password on the server the gate is invisible. */}
+        <AuthGate>
+          <AppProvider>
+            <App />
+          </AppProvider>
+        </AuthGate>
       </I18nProvider>
     </ErrorBoundary>
   </StrictMode>,

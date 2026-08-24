@@ -278,6 +278,16 @@
       focus:border-accent-500/60 focus:ring-2 focus:ring-accent-500/20;
   }
 
+  /* 16px, and not one pixel less: iOS Safari zooms the whole page when a text
+     field smaller than that takes focus, and the login form is the one place
+     where that lands mid-password with no way back except a pinch. Written as
+     input.login-input (0-1-1) rather than .login-input (0-1-0) so it beats the
+     text-sm inside .input whatever order the layer ends up in — losing that
+     cascade is how the same fix missed the password field once already. */
+  input.login-input {
+    font-size: 16px;
+  }
+
   .label {
     @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400;
   }

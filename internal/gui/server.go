@@ -42,6 +42,18 @@ type Server struct {
 	allowLAN   bool
 	selfUpdate bool
 
+	// publicHost is the one public name this server may be addressed by
+	// (-public-host, e.g. a Cloudflare Tunnel hostname). Empty unless asked
+	// for, and main refuses to set it without a configured password: an
+	// unauthenticated kinopub-gui on a public hostname is the one failure that
+	// must be impossible.
+	publicHost string
+
+	// auth is the login. Nil-safe: without a password hash in the environment
+	// it reports disabled and every request goes through, which is upstream's
+	// behaviour.
+	auth *authGate
+
 	// kino.pub official-API device login (background poll) state.
 	kpMu    sync.Mutex
 	kpLogin *kpLoginSession
@@ -91,6 +103,13 @@ func NewServer(version string, static fs.FS) *Server {
 		hlsSem:     make(chan struct{}, 4),
 		selfUpdate: true,
 	}
+	// The login, if one is configured. Built here rather than in main so tests
+	// and the tray build get the same server either way.
+	s.auth = newAuthGate(
+		os.Getenv("KINOPUB_AUTH_PASSWORD_HASH"),
+		os.Getenv("KINOPUB_AUTH_USER"),
+		readTOTPConfig,
+	)
 	// Teach the scheduler how to launch a job: resolve the single shared API
 	// client (nil when not signed in → run() fails the job with a clear message)
 	// and start the run goroutine. Sharing one client across discovery and every
@@ -130,10 +149,14 @@ func (s *Server) SetRestart(fn func()) { s.restart = fn }
 // SetSelfUpdate enables or disables the in-app updater (on by default).
 func (s *Server) SetSelfUpdate(v bool) { s.selfUpdate = v }
 
-// Handler returns the root http.Handler. There is no auth gate: local features
-// (Library, Doctor, Settings, the folder picker) work without signing in;
-// kino.pub operations (preview/download) fail with a clear error when no
-// credentials are available, which the UI surfaces and prompts to sign in.
+// Handler returns the root http.Handler.
+//
+// Upstream has no login of its own: local features (Library, Doctor, Settings,
+// the folder picker) work without signing in, and only kino.pub operations fail
+// with a clear error when no credentials are available. This fork adds one —
+// see auth.go — which is off unless KINOPUB_AUTH_PASSWORD_HASH is set. When it
+// is, everything under /api/ except the login routes needs a session, and the
+// static bundle stays open because it IS the login form.
 //
 // All routes sit behind guardLocalOnly, which protects this credential-holding
 // server from web pages: it rejects requests whose Host is not a loopback
@@ -141,7 +164,30 @@ func (s *Server) SetSelfUpdate(v bool) { s.selfUpdate = v }
 // Origin (defeating a malicious site's direct fetch to 127.0.0.1). SetAllowLAN
 // widens the accepted Hosts to the local network; see hostAllowed for the
 // trade-off that makes.
-func (s *Server) Handler() http.Handler { return guardLocalOnly(s.mux, s.allowLAN) }
+func (s *Server) Handler() http.Handler {
+	var h http.Handler = s.requireAuth(s.mux)
+	if s.auth.enabled() {
+		// Only worth sending once a login exists — which is also the only case
+		// where this server is meant to be reachable from a browser that did
+		// not come from the LAN. A CSP on a loopback-only install would be a
+		// new way to break the player for no gain.
+		h = securityHeaders(h)
+	}
+	return guardLocalOnly(h, s.allowLAN, s.publicHost)
+}
+
+// SetPublicHost names the single public hostname the server accepts (a
+// Cloudflare Tunnel origin). Callers must have verified a password is
+// configured — see cmd/kinopub-gui.
+func (s *Server) SetPublicHost(h string) { s.publicHost = strings.ToLower(strings.TrimSpace(h)) }
+
+// AuthEnabled reports whether a password is configured, so main can refuse to
+// publish a login-less server and can say what it is serving.
+func (s *Server) AuthEnabled() bool { return s.auth.enabled() }
+
+// TOTPEnabled reports whether a second factor is in force right now, for the
+// startup banner.
+func (s *Server) TOTPEnabled() bool { return s.auth.totpRequired() }
 
 // SetAllowLAN opens the server to other machines on the local network (see
 // hostAllowed). Off by default; the -lan flag turns it on for a home-server
@@ -151,9 +197,9 @@ func (s *Server) SetAllowLAN(v bool) { s.allowLAN = v }
 // guardLocalOnly wraps the mux with anti-rebinding / anti-CSRF checks suitable
 // for a loopback-only control server. With allowLAN set, private-network hosts
 // are accepted too.
-func guardLocalOnly(next http.Handler, allowLAN bool) http.Handler {
+func guardLocalOnly(next http.Handler, allowLAN bool, publicHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !hostAllowed(r.Host, allowLAN) {
+		if !hostAllowed(r.Host, allowLAN, publicHost) {
 			msg := "forbidden: this server only accepts loopback requests"
 			if !allowLAN {
 				msg += " (start it with -lan to allow your local network)"
@@ -161,7 +207,7 @@ func guardLocalOnly(next http.Handler, allowLAN bool) http.Handler {
 			writeErr(w, http.StatusForbidden, msg)
 			return
 		}
-		if origin := r.Header.Get("Origin"); origin != "" && !originAllowed(origin, r.Host, allowLAN) {
+		if origin := r.Header.Get("Origin"); origin != "" && !originAllowed(origin, r.Host, allowLAN, publicHost) {
 			writeErr(w, http.StatusForbidden, "forbidden: cross-origin request")
 			return
 		}
@@ -175,7 +221,7 @@ func guardLocalOnly(next http.Handler, allowLAN bool) http.Handler {
 // weakening security: a real cross-site Origin (an external domain) is still
 // rejected, and the hostAllowed(r.Host) check above already defeats
 // DNS-rebinding for the loopback-only case.
-func originAllowed(origin, host string, allowLAN bool) bool {
+func originAllowed(origin, host string, allowLAN bool, publicHost string) bool {
 	u, err := url.Parse(origin)
 	if err != nil || u.Host == "" {
 		return false
@@ -183,7 +229,7 @@ func originAllowed(origin, host string, allowLAN bool) bool {
 	if u.Host == host {
 		return true
 	}
-	return hostAllowed(u.Host, allowLAN)
+	return hostAllowed(u.Host, allowLAN, publicHost)
 }
 
 // hostAllowed reports whether a Host header may reach the server: loopback
@@ -194,11 +240,31 @@ func originAllowed(origin, host string, allowLAN bool) bool {
 // for those addresses — a public name CAN resolve to 192.168.x.y. That is the
 // trade the -lan flag makes explicit: on a home LAN, anyone who can reach the
 // port can already use this server, since it has no user accounts.
-func hostAllowed(host string, allowLAN bool) bool {
+func hostAllowed(host string, allowLAN bool, publicHost string) bool {
 	if isLoopbackHost(host) {
 		return true
 	}
+	if publicHost != "" && isPublicHost(host, publicHost) {
+		return true
+	}
 	return allowLAN && isPrivateHost(host)
+}
+
+// isPublicHost reports whether a Host header names the one public hostname this
+// server was told to answer to. The port is ignored — the tunnel forwards the
+// name the browser typed, and a browser omits :443.
+//
+// This is the ONLY way a name that public DNS can resolve gets through, and it
+// is what -public-host buys. It gives up the DNS-rebinding defence for that one
+// name, which is why main refuses to set it unless a password is configured:
+// from then on a session, not the Host header, is what grants access.
+func isPublicHost(host, publicHost string) bool {
+	h, _, err := net.SplitHostPort(host)
+	if err != nil {
+		h = host
+	}
+	h = strings.TrimSuffix(strings.TrimPrefix(h, "["), "]")
+	return strings.EqualFold(h, publicHost)
 }
 
 // isPrivateHost reports whether a Host header names a machine that can only
@@ -249,6 +315,17 @@ func (s *Server) routes() {
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	mux.HandleFunc("GET /api/state", s.handleState)
 	mux.HandleFunc("GET /api/events", s.handleEvents)
+
+	// This server's own login (not kino.pub's). The first three are reachable
+	// without a session — see authExempt — because the page they serve IS the
+	// login form.
+	mux.HandleFunc("GET /api/auth/meta", s.handleAuthMeta)
+	mux.HandleFunc("POST /api/auth/login", s.handleAuthLogin)
+	mux.HandleFunc("POST /api/auth/logout", s.handleAuthLogout)
+	mux.HandleFunc("GET /api/auth/totp", s.handleTOTPStatus)
+	mux.HandleFunc("POST /api/auth/totp/begin", s.handleTOTPBegin)
+	mux.HandleFunc("POST /api/auth/totp/enable", s.handleTOTPEnable)
+	mux.HandleFunc("POST /api/auth/totp/disable", s.handleTOTPDisable)
 
 	// kino.pub official-API (device-code) auth.
 	mux.HandleFunc("GET /api/kp/status", s.handleKPStatus)

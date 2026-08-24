@@ -116,7 +116,7 @@ func TestOriginAllowed(t *testing.T) {
 		{"http://evil.example.com", "192.168.2.200:8765", true, false},
 	}
 	for _, c := range cases {
-		if got := originAllowed(c.origin, c.host, c.allowLAN); got != c.want {
+		if got := originAllowed(c.origin, c.host, c.allowLAN, ""); got != c.want {
 			t.Errorf("originAllowed(%q, %q, lan=%v) = %v, want %v", c.origin, c.host, c.allowLAN, got, c.want)
 		}
 	}
@@ -143,7 +143,7 @@ func TestIsPrivateHost(t *testing.T) {
 
 func TestGuardLocalOnly_RejectsNonLoopbackHost(t *testing.T) {
 	called := false
-	guard := guardLocalOnly(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), false)
+	guard := guardLocalOnly(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), false, "")
 	req := httptest.NewRequest("GET", "/api/health", nil)
 	req.Host = "evil.example.com"
 	w := httptest.NewRecorder()
@@ -155,7 +155,7 @@ func TestGuardLocalOnly_RejectsNonLoopbackHost(t *testing.T) {
 
 func TestGuardLocalOnly_RejectsLANHostWithoutFlag(t *testing.T) {
 	called := false
-	guard := guardLocalOnly(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), false)
+	guard := guardLocalOnly(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), false, "")
 	req := httptest.NewRequest("GET", "/api/health", nil)
 	req.Host = "192.168.2.200:8765"
 	w := httptest.NewRecorder()
@@ -170,7 +170,7 @@ func TestGuardLocalOnly_AllowsLANHostWithFlag(t *testing.T) {
 	guard := guardLocalOnly(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 		w.WriteHeader(http.StatusOK)
-	}), true)
+	}), true, "")
 	req := httptest.NewRequest("POST", "/api/jobs", nil)
 	req.Host = "192.168.2.200:8765"
 	req.Header.Set("Origin", "http://192.168.2.200:8765")
@@ -183,7 +183,7 @@ func TestGuardLocalOnly_AllowsLANHostWithFlag(t *testing.T) {
 
 func TestGuardLocalOnly_RejectsPublicHostEvenWithLAN(t *testing.T) {
 	called := false
-	guard := guardLocalOnly(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), true)
+	guard := guardLocalOnly(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), true, "")
 	req := httptest.NewRequest("GET", "/api/health", nil)
 	req.Host = "kino.example.com"
 	w := httptest.NewRecorder()
@@ -198,7 +198,7 @@ func TestGuardLocalOnly_AllowsLoopback(t *testing.T) {
 	guard := guardLocalOnly(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 		w.WriteHeader(http.StatusOK)
-	}), false)
+	}), false, "")
 	req := httptest.NewRequest("GET", "/api/health", nil)
 	req.Host = "127.0.0.1:8765"
 	w := httptest.NewRecorder()

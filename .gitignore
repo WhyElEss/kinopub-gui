@@ -46,3 +46,7 @@ dist-app/
 
 # generated Windows resource (icon/version) — produced by `make winsyso` / CI
 cmd/kinopub-gui/*.syso
+
+# Deployment secrets: the login hash and the Cloudflare Tunnel token live here
+# and must never be committed. deploy/.env.example carries the shape instead.
+deploy/.env

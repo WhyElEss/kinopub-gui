@@ -34,10 +34,14 @@ func run() int {
 		showVersion  bool
 		lan          bool
 		noSelfUpdate bool
+		publicHost   string
+		hashPassword bool
 	)
 	flag.StringVar(&addr, "addr", "127.0.0.1:8765", "address to listen on (host:port)")
 	flag.BoolVar(&noOpen, "no-open", false, "do not open the browser automatically")
-	flag.BoolVar(&lan, "lan", false, "accept requests from the local network too (use with -addr 0.0.0.0:8765; there is no login, so anyone on the LAN gets full access)")
+	flag.BoolVar(&lan, "lan", false, "accept requests from the local network too (use with -addr 0.0.0.0:8765; without a password, anyone on the LAN gets full access)")
+	flag.StringVar(&publicHost, "public-host", os.Getenv("KINOPUB_PUBLIC_HOST"), "public hostname this server may be addressed by, e.g. a Cloudflare Tunnel origin (requires KINOPUB_AUTH_PASSWORD_HASH)")
+	flag.BoolVar(&hashPassword, "hash-password", false, "prompt for a password and print the KINOPUB_AUTH_PASSWORD_HASH line, then exit")
 	flag.BoolVar(&noSelfUpdate, "no-self-update", false, "disable the in-app updater (for container/package installs)")
 	flag.BoolVar(&showVersion, "version", false, "print version and exit")
 	flag.Usage = func() {
@@ -52,9 +56,50 @@ func run() int {
 		return 0
 	}
 
+	if hashPassword {
+		return printPasswordHash()
+	}
+
 	srv := gui.NewServer(version, web.Dist())
 	srv.SetAllowLAN(lan)
 	srv.SetSelfUpdate(!noSelfUpdate)
+
+	// A password hash that exists but cannot be recognised is a startup ERROR,
+	// not a warning: quietly serving with no login because a paste got
+	// truncated is the failure nobody notices, and this server holds a kino.pub
+	// session and can write gigabytes into a media library.
+	if raw := os.Getenv("KINOPUB_AUTH_PASSWORD_HASH"); raw != "" && !gui.LooksLikeHash(raw) {
+		fmt.Fprintln(os.Stderr,
+			"kinopub-gui: KINOPUB_AUTH_PASSWORD_HASH is not a hash produced by "+
+				"`kinopub-gui -hash-password` (expected scrypt$N$r$p$salt$key). "+
+				"Refusing to start with a password nobody could match.")
+		return 1
+	}
+	// Same reasoning for the second factor: if it was asked for in the
+	// environment and cannot be read, running anyway means running with less
+	// protection than was configured.
+	if secret := os.Getenv("KINOPUB_AUTH_TOTP_SECRET"); secret != "" && !gui.LooksLikeTOTPSecret(secret) {
+		fmt.Fprintln(os.Stderr,
+			"kinopub-gui: KINOPUB_AUTH_TOTP_SECRET is not a usable base32 secret "+
+				"(at least 16 bytes once decoded). Refusing to start rather than "+
+				"quietly serving without the second factor you asked for.")
+		return 1
+	}
+
+	// -public-host is the whole reason this server can be reached by a name
+	// public DNS resolves. Setting it without a password would publish a
+	// credential-holding downloader to the internet, so it is refused outright
+	// — this is the one failure that must be impossible.
+	if publicHost != "" {
+		if !srv.AuthEnabled() {
+			fmt.Fprintf(os.Stderr,
+				"kinopub-gui: -public-host %s needs a password. Run "+
+					"`kinopub-gui -hash-password` and set KINOPUB_AUTH_PASSWORD_HASH. "+
+					"Refusing to publish a server with no login.\n", publicHost)
+			return 1
+		}
+		srv.SetPublicHost(publicHost)
+	}
 	// Followed series are checked for new episodes in the background from here on.
 	srv.StartWatcher()
 
@@ -92,6 +137,7 @@ func run() int {
 	})
 
 	banner(url)
+	authBanner(srv, publicHost)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- httpSrv.Serve(ln) }()

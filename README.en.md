@@ -105,13 +105,48 @@ kinopub-gui [flags]
                    falls back to an ephemeral port if taken)
   -no-open         do not open the browser automatically
   -lan             accept requests from the local network too
+  -public-host     public hostname the server may be addressed by
+                   (needs a password; see "The app's own login")
+  -hash-password   prompt for a password and print the line for .env
   -no-self-update  disable the in-app updater (container/package installs)
   -version         print version and exit
 ```
 
 By default the server listens on your computer only (`127.0.0.1`) — it's not a public service, nothing outside can reach it. It also rejects requests that don't come from its own page, so a random site in your browser can't quietly poke at it.
 
-`-lan` lifts that for your local network: together with `-addr 0.0.0.0:8765` the app becomes reachable at something like `http://192.168.2.200:8765` from any device in the house. Only private addresses (RFC1918, link-local), `*.local` names and single-label hostnames are accepted; public domains are still rejected. **The app has no login** — anyone who can reach the port gets the server's filesystem, its downloads and your kino.pub account. Don't port-forward it.
+`-lan` lifts that for your local network: together with `-addr 0.0.0.0:8765` the app becomes reachable at something like `http://192.168.2.200:8765` from any device in the house. Only private addresses (RFC1918, link-local), `*.local` names and single-label hostnames are accepted; public domains are still rejected. Without a password **the app has no login** — anyone who can reach the port gets the server's filesystem, its downloads and your kino.pub account. Don't port-forward it.
+
+With a password set (below) every request needs a session, the LAN included, and the app can be published on one public hostname.
+
+### The app's own login
+
+Not in upstream. This server holds your kino.pub session, walks a mounted filesystem and writes gigabytes into a media library, so publishing it without a real barrier is not an option. The design is the same one already running on the [bluesky-feedgen](https://github.com/WhyElEss/homespun-feedgen) admin page: the two projects are maintained together, and a second design would be a second set of mistakes.
+
+**1. The password.** Only an scrypt hash is stored, and only in the environment:
+
+```bash
+docker compose run --rm kinopub-gui -hash-password
+```
+
+It prompts twice with echo off and prints a `KINOPUB_AUTH_PASSWORD_HASH=…` line to paste into `deploy/.env` by hand (see `deploy/.env.example`). The command itself **saves nothing** — it runs inside the container, where `.env` is not even mounted. Twelve characters minimum.
+
+A hash that looks truncated is a startup **error**, not a warning: quietly running with no password because a paste lost its tail is the failure nobody notices.
+
+**2. The public hostname.** `KINOPUB_PUBLIC_HOST=kino.example.com` (or the `-public-host` flag) adds exactly one public name to the accepted `Host` values. It is the only way past the anti-DNS-rebinding check, which is why **the server refuses to start when a public hostname is set and no password is** — from then on access is granted by a session, not by a `Host` header the client is free to forge.
+
+**3. The second factor** (optional, worth having). **Settings → Security**, a button rather than a file: only someone already signed in can add one. The secret lands in `/config/totp.json`, mode 0600 — not in the environment, and that asymmetry is the point. A password must exist *before* the server is public: set through the UI, a fresh install would offer an unprotected setup page on a public hostname and whoever found it first would own the box. A second factor has no such window.
+
+What is deliberate here:
+
+- the window is **one step either side** (±30 s) and no wider — wide windows are how TOTP quietly stops being a second factor;
+- **a code works once** — the accepted step is remembered, so a shoulder-surfed code is refused for the rest of its window;
+- the code is checked **strictly after** the password, so a wrong password reveals nothing about it and does not spend a step;
+- **an unreadable secret refuses logins** and names the file to delete, rather than dropping to one factor;
+- locked out? `docker exec kinopub-gui rm /config/totp.json`, no restart needed. From the environment: drop `KINOPUB_AUTH_TOTP_SECRET` and restart.
+
+The rest: one account (name `admin` by default, `KINOPUB_AUTH_USER` to change it), and a wrong name and a wrong password give the **same** answer; sessions live on the server with nothing but a random token in the cookie, so a restart signs everyone out; a session lasts 30 days and dies after 7 days idle; failed logins are capped at 5 per client and 20 in total per 15 minutes, counting `CF-Connecting-IP` as the client — with the global cap there for when that header is forged.
+
+If a session expires while a page is open, the form arrives **over** it: a film half-watched and a download form half filled in should not be the price of a timeout.
 
 ### Updating
 
@@ -262,7 +297,9 @@ Then open `http://<server-ip>:8765` from any device on the network and sign in t
 
 What matters about this setup:
 
-- the container starts with `-addr 0.0.0.0:8765 -lan -no-open -no-self-update`; **there is no authentication**, so keep the port inside your local network;
+- the container starts with `-addr 0.0.0.0:8765 -lan -no-open -no-self-update`; without `KINOPUB_AUTH_PASSWORD_HASH` in `deploy/.env` **there is no authentication**, so keep the port inside your local network;
+- with a password in `deploy/.env` every request needs a session, and `deploy/docker-compose.yml` brings up `cloudflared` alongside — a public address with no port forwarded anywhere. The tunnel token lives in the same `.env` (mode 0600) rather than on the command line, where `ps` would show it. Comment the `cloudflared` service out for a LAN-only install;
+- the second factor, once enrolled, is `/config/totp.json` — the same named volume as the settings and the kino.pub tokens, so it survives a rebuild;
 - the folder picker in the UI browses the **container's** filesystem — only what you mounted can be chosen (`/mnt/share/Media` → `/media` in the example);
 - `user: "1000:1000"` — files are written as the media library's owner, not as root;
 - `/config` (settings and the encrypted kino.pub tokens) lives in the named volume `kinopub-config` rather than in the repo directory — otherwise a `git clone`/rsync over the sources would wipe the saved login. Read it with `docker run --rm -v kinopub-config:/c alpine cat /c/kinopub/gui.json`;

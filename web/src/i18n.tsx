@@ -34,6 +34,50 @@ const RU: Record<string, string> = {
   connected: "подключено",
   reconnecting: "переподключение",
 
+  // This server's own login (see components/AuthGate.tsx and SecurityPanel.tsx).
+  // Separate from the kino.pub sign-in below: one is the account this server
+  // holds, the other is who may reach this server at all.
+  Username: "Имя пользователя",
+  Password: "Пароль",
+  "Authenticator code": "Код из приложения",
+  "This downloader is reachable from the internet. Sign in to continue.":
+    "Этот загрузчик доступен из интернета. Войдите, чтобы продолжить.",
+  "Your session ended. Sign in again — this page is still here.":
+    "Сессия закончилась. Войдите снова — страница никуда не делась.",
+  "Sessions live on the server and end when it restarts.":
+    "Сессии живут на сервере и заканчиваются при его перезапуске.",
+  Security: "Безопасность",
+  "This server's own login, signed in as {user}.":
+    "Собственный вход этого сервера, вы вошли как {user}.",
+  "Two-factor ON": "Двухфакторная защита ВКЛ",
+  "Two-factor off": "Двухфакторная защита выкл",
+  "Two-factor secret unreadable": "Секрет 2FA не читается",
+  "{n} active sessions": "активных сессий: {n}",
+  "Sign out": "Выйти",
+  "Logins are refused until this is fixed — running with one factor when two were configured is the failure nobody notices. Delete {file} on the server to turn two-factor off.":
+    "Вход запрещён, пока это не исправлено: работать с одним фактором там, где настроено два, — отказ, которого никто не замечает. Удалите {file} на сервере, чтобы отключить 2FA.",
+  "Two-factor is set through KINOPUB_AUTH_TOTP_SECRET on the server. Change it there — this page cannot edit the environment.":
+    "Двухфакторная защита задана через KINOPUB_AUTH_TOTP_SECRET на сервере. Меняйте там — эта страница не может править окружение.",
+  "Turn on two-factor": "Включить двухфакторную защиту",
+  "Turn off two-factor": "Отключить двухфакторную защиту",
+  "Turn off": "Отключить",
+  "Scan this with an authenticator app, then type the code it shows.":
+    "Отсканируйте это приложением-аутентификатором и введите код, который оно покажет.",
+  "Or type the secret in by hand:": "Или введите секрет вручную:",
+  "The app should be showing {code} right now. If it shows something else, this server and your phone disagree about the time.":
+    "Прямо сейчас приложение должно показывать {code}. Если там другое число — сервер и телефон расходятся во времени.",
+  "Code from the app": "Код из приложения",
+  "Confirm and turn on": "Подтвердить и включить",
+  "Nothing is saved until a code proves the app really has the secret.":
+    "Ничего не сохраняется, пока код не докажет, что секрет действительно попал в приложение.",
+  "Both factors again, on purpose: a hijacked session must not be able to quietly remove the thing protecting the account.":
+    "Оба фактора снова, и это намеренно: угнанная сессия не должна тихо снять то, что защищает аккаунт.",
+  "Could not start enrolment": "Не удалось начать подключение",
+  "Two-factor is on": "Двухфакторная защита включена",
+  "Two-factor is off": "Двухфакторная защита отключена",
+  "That code does not match": "Код не подходит",
+  "Could not turn two-factor off": "Не удалось отключить двухфакторную защиту",
+
   // Auth gate / panel
   "kino.pub downloader": "kino.pub загрузчик",
   "Sign in to kino.pub to continue": "Войдите в kino.pub, чтобы продолжить",

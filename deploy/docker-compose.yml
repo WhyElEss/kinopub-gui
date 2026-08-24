@@ -4,9 +4,18 @@
 #
 # Then open http://<server-ip>:8765 from any machine on the LAN.
 #
-# There is NO login in this app: anyone who can reach port 8765 can browse the
-# mounted filesystem, start downloads and use the signed-in kino.pub account.
-# Keep it on the LAN — do not port-forward it.
+# WITHOUT a password this app has no accounts: anyone who can reach port 8765
+# can browse the mounted filesystem, start downloads and use the signed-in
+# kino.pub account. Keep it on the LAN — do not port-forward it.
+#
+# WITH a password (KINOPUB_AUTH_PASSWORD_HASH in .env) every request needs a
+# session, LAN included, and the app may also be published on one public
+# hostname through the Cloudflare Tunnel below. Set the hash first:
+#
+#   docker compose run --rm kinopub-gui -hash-password
+#
+# and paste the line it prints into deploy/.env. See README for the whole
+# sequence, including the second factor.
 
 services:
   kinopub-gui:
@@ -27,16 +36,29 @@ services:
     ports:
       - "8765:8765"
 
+    # Values that are secret (the password hash) come from .env, mode 0600, and
+    # are never committed. deploy/.env.example shows the shape.
+    env_file:
+      - path: .env
+        required: false
+
     environment:
       - TZ=America/Toronto
       # First-run default for the output folder — inside the container, so it
       # names the mount below rather than a home directory that isn't mounted.
       - KINOPUB_OUTPUT_DIR=/media
+      # The one public name this server answers to, on top of loopback and the
+      # LAN. Empty unless a tunnel is in front of it. The server REFUSES TO
+      # START with this set and no password configured: an unauthenticated
+      # kinopub-gui on a public hostname is the one failure that must be
+      # impossible, so this line and the hash in .env stand or fall together.
+      - KINOPUB_PUBLIC_HOST=${KINOPUB_PUBLIC_HOST:-}
 
     volumes:
-      # Settings + encrypted kino.pub credentials. A named volume rather than a
-      # path inside the repo: a checkout or an rsync of the sources must never be
-      # able to wipe the saved login. Read it with
+      # Settings, encrypted kino.pub credentials, and the second-factor secret
+      # (totp.json, 0600) once one is enrolled from the UI. A named volume
+      # rather than a path inside the repo: a checkout or an rsync of the
+      # sources must never be able to wipe the saved login. Read it with
       #   docker run --rm -v kinopub-config:/c alpine cat /c/kinopub/gui.json
       - kinopub-config:/config
       # The media library the downloads go into. The folder picker in the UI
@@ -47,6 +69,29 @@ services:
       # Without this mount the container falls back to the host's boot id, which
       # changes on every reboot — and the saved login would be lost each time.
       - /etc/machine-id:/etc/machine-id:ro
+
+  # The public endpoint, in THIS compose project rather than a directory of its
+  # own, so `update-all-docker.sh` (which finds projects by docker-compose.yml)
+  # keeps the image current and so the tunnel is recreated with the app it
+  # fronts. Same arrangement as the feedgen box.
+  #
+  # The tunnel's Service URL is http://kinopub-gui:8765 — the container name on
+  # this project's own network, so the origin is reached without going back out
+  # through the host's published port.
+  #
+  # TUNNEL_TOKEN lives in .env (mode 0600) and NEVER on the command line, where
+  # `ps` would show it to every user on the box. With no .env this service
+  # starts, finds no token and restarts in a loop; comment it out for a
+  # LAN-only install.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-kinopub
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - kinopub-gui
 
 volumes:
   kinopub-config:
