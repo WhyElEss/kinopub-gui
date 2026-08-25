@@ -8,14 +8,16 @@
 # can browse the mounted filesystem, start downloads and use the signed-in
 # kino.pub account. Keep it on the LAN — do not port-forward it.
 #
-# WITH a password (KINOPUB_AUTH_PASSWORD_HASH in .env) every request needs a
-# session, LAN included, and the app may also be published on one public
+# WITH a password (KINOPUB_AUTH_PASSWORD_HASH in auth.env) every request needs
+# a session, LAN included, and the app may also be published on one public
 # hostname through the Cloudflare Tunnel below. Set the hash first:
 #
 #   docker compose run --rm kinopub-gui -hash-password
 #
-# and paste the line it prints into deploy/.env. See README for the whole
-# sequence, including the second factor.
+# and paste the line it prints into deploy/auth.env. Two files, not one:
+# auth.env holds what the APP needs and is read literally; .env holds what
+# COMPOSE substitutes into this file. See README for the whole sequence,
+# including the second factor.
 
 services:
   kinopub-gui:
@@ -36,10 +38,24 @@ services:
     ports:
       - "8765:8765"
 
-    # Values that are secret (the password hash) come from .env, mode 0600, and
-    # are never committed. deploy/.env.example shows the shape.
+    # The password hash comes from a file of its OWN, and `format: raw` on it is
+    # NOT optional.
+    #
+    # An scrypt hash is $-separated, and compose interpolates ${...} inside env
+    # values — env_file included, which is the part that is easy to get wrong
+    # and was, once. `$iwiQfO…` reads as a variable reference and expands to
+    # nothing, and compose says so only as a warning. The app then refuses to
+    # start rather than serving with a password nobody could match, which is
+    # how this was caught; `format: raw` is what stops it happening at all.
+    #
+    # Needs compose v2.24+. On an older one, escape every $ in the hash as $$.
+    #
+    # A file of its own rather than .env for a second reason: .env carries
+    # TUNNEL_TOKEN, and this container has no business holding it. Nothing here
+    # should be able to stand up the tunnel.
     env_file:
-      - path: .env
+      - path: auth.env
+        format: raw
         required: false
 
     environment:
@@ -51,7 +67,8 @@ services:
       # LAN. Empty unless a tunnel is in front of it. The server REFUSES TO
       # START with this set and no password configured: an unauthenticated
       # kinopub-gui on a public hostname is the one failure that must be
-      # impossible, so this line and the hash in .env stand or fall together.
+      # impossible, so this line and the hash in auth.env stand or fall
+      # together.
       - KINOPUB_PUBLIC_HOST=${KINOPUB_PUBLIC_HOST:-}
 
     volumes:
@@ -79,7 +96,8 @@ services:
   # this project's own network, so the origin is reached without going back out
   # through the host's published port.
   #
-  # TUNNEL_TOKEN lives in .env (mode 0600) and NEVER on the command line, where
+  # TUNNEL_TOKEN lives in .env (mode 0600, and NOT in auth.env — the app has no
+  # business holding it) and NEVER on the command line, where
   # `ps` would show it to every user on the box. With no .env this service
   # starts, finds no token and restarts in a loop; comment it out for a
   # LAN-only install.

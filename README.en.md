@@ -128,7 +128,9 @@ Not in upstream. This server holds your kino.pub session, walks a mounted filesy
 docker compose run --rm kinopub-gui -hash-password
 ```
 
-It prompts twice with echo off and prints a `KINOPUB_AUTH_PASSWORD_HASH=…` line to paste into `deploy/.env` by hand (see `deploy/.env.example`). The command itself **saves nothing** — it runs inside the container, where `.env` is not even mounted. Twelve characters minimum.
+It prompts twice with echo off and prints a `KINOPUB_AUTH_PASSWORD_HASH=…` line to paste into `deploy/auth.env` by hand (see `deploy/auth.env.example`). The command itself **saves nothing** — it runs inside the container, where that file is not even mounted. Twelve characters minimum.
+
+Two files, and the split is not cosmetic. `deploy/.env` is what compose substitutes into `docker-compose.yml`; `deploy/auth.env` is what the app itself is handed. An scrypt hash is `$`-separated, and compose interpolates `${...}` inside env values — **`env_file` included**, which is the part that is easy to get wrong: `$iwiQfO…` reads as a variable reference and expands to nothing, and compose only warns. So `auth.env` carries `format: raw` (needs compose v2.24+; on an older one, escape every `$` as `$$`). It also keeps `TUNNEL_TOKEN` in `.env` and out of the app's container, which has no business holding it.
 
 A hash that looks truncated is a startup **error**, not a warning: quietly running with no password because a paste lost its tail is the failure nobody notices.
 
