@@ -43,7 +43,7 @@ services:
     #
     # An scrypt hash is $-separated, and compose interpolates ${...} inside env
     # values — env_file included, which is the part that is easy to get wrong
-    # and was, once. `$iwiQfO…` reads as a variable reference and expands to
+    # and was, once. `$Nk7pQr…` reads as a variable reference and expands to
     # nothing, and compose says so only as a warning. The app then refuses to
     # start rather than serving with a password nobody could match, which is
     # how this was caught; `format: raw` is what stops it happening at all.
