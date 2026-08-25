@@ -448,7 +448,11 @@ export function JobCard({
               {job.startedAt ? `${t("started")} ${relTime(job.startedAt, t)}` : `${t("created")} ${relTime(job.createdAt, t)}`}
               {job.quality ? ` · ${job.quality}` : ""}
             </span>
-            <div className="ml-auto flex items-center gap-2">
+            {/* flex-wrap here too, not only on the row above: this cluster is
+                ONE flex item of that row, so however freely the row wrapped,
+                the buttons inside could not — and Stop, always last, was the
+                one hanging off the edge of the screen. */}
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               {totalEps > 0 && (
                 <button className="btn-ghost px-3 py-1.5" onClick={() => setShowEps(!showEps)}>
                   {showEps ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}

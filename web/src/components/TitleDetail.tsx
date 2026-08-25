@@ -567,15 +567,21 @@ export function TitleDetail({
 
           {/* Destination: folder + path templates for THIS download */}
           <div className="space-y-3 border-t border-white/[0.05] pt-4">
+            {/* max-w-full + min-w-0, and shrink-0 on the chevron and the label:
+                the collapsed row carries a full output path, which on a phone
+                is several times the width of the screen. Without a shrink
+                floor of zero on the button itself the path never ellipsised —
+                it just pushed the row, and the page with it, off the right
+                edge. */}
             <button
               type="button"
-              className="flex items-center gap-2 text-sm font-semibold text-slate-200"
+              className="flex w-full min-w-0 max-w-full items-center gap-2 text-sm font-semibold text-slate-200"
               onClick={() => setShowDest((v) => !v)}
             >
-              {showDest ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              {t("Where to save")}
+              {showDest ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+              <span className="shrink-0">{t("Where to save")}</span>
               {!showDest && (
-                <span className="truncate font-mono text-[11px] font-normal text-slate-500">
+                <span className="min-w-0 flex-1 truncate text-left font-mono text-[11px] font-normal text-slate-500">
                   {previewPath(outputPath, dirTmpl, nameTmpl, templateValues, settings.container === "mp4" ? "mp4" : "mkv")}
                 </span>
               )}

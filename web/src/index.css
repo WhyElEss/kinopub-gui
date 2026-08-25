@@ -288,6 +288,23 @@
     font-size: 16px;
   }
 
+  /* The same trap, everywhere else. .input is text-sm and several fields put
+     text-xs on top, so tapping the catalog search — or any template field —
+     zoomed the page and left it zoomed. The remedy is the field size, not
+     maximum-scale=1 in the viewport meta: that also stops the reader pinching
+     to enlarge anything, which is a worse trade than a 2px-larger input.
+     Scoped to coarse pointers so the desktop keeps its 14px, and written
+     element.class (0-1-1) for the same cascade reason as login-input above.
+     player-select is left alone deliberately — it is chrome over a video, and
+     iOS does not zoom a focused control in fullscreen. */
+  @media (pointer: coarse) {
+    input.input,
+    select.input,
+    textarea.input {
+      font-size: 16px;
+    }
+  }
+
   .label {
     @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400;
   }
